@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StudyFlow — 나만의 학습 관리</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F3EE;
+      --surface: #FDFCF9;
+      --surface2: #F0EDE5;
+      --ink: #1C1A16;
+      --ink2: #5C5849;
+      --ink3: #9C9485;
+      --accent: #4A7C59;
+      --accent-light: #6FA882;
+      --accent-bg: #EAF3DE;
+      --amber: #BA7517;
+      --border: rgba(28,26,22,0.1);
+      --border2: rgba(28,26,22,0.18);
+      --radius: 12px;
+      --radius-lg: 20px;
+      --tr: 0.2s ease;
+    }
+
+    html, body { height: 100%; font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--ink); }
+
+    .bg-wrap { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--bg); }
+    .bg-circle { position: absolute; border-radius: 50%; }
+    .bg-circle.c1 { width: 700px; height: 700px; top: -200px; right: -200px; background: radial-gradient(circle, rgba(74,124,89,0.08) 0%, transparent 70%); }
+    .bg-circle.c2 { width: 500px; height: 500px; bottom: -150px; left: -100px; background: radial-gradient(circle, rgba(186,117,23,0.07) 0%, transparent 70%); }
+
+    .deco { position: absolute; opacity: 0.04; }
+    .deco svg { fill: var(--ink); }
+    .deco.d1 { top: 8%; left: 5%; transform: rotate(-15deg); }
+    .deco.d2 { top: 30%; right: 4%; transform: rotate(12deg); }
+    .deco.d3 { bottom: 12%; left: 3%; transform: rotate(8deg); }
+    .deco.d4 { bottom: 25%; right: 7%; transform: rotate(-10deg); }
+
+    .page { position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+
+    .card {
+      display: flex; width: 100%; max-width: 920px;
+      background: var(--surface); border-radius: var(--radius-lg);
+      border: 1px solid var(--border2); overflow: hidden;
+      box-shadow: 0 24px 64px rgba(28,26,22,0.1), 0 4px 16px rgba(28,26,22,0.06);
+      animation: rise 0.65s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* LEFT */
+    .panel-left {
+      width: 360px; flex-shrink: 0; background: var(--ink);
+      padding: 3rem 2.5rem; display: flex; flex-direction: column; position: relative; overflow: hidden;
+    }
+    .panel-left::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .panel-left::after { content: ''; position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(74,124,89,0.25) 0%, transparent 70%); bottom: -80px; right: -80px; }
+
+    .brand { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+    .brand-mark { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-mark svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .brand-name { font-family: 'Gowun Batang', serif; font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .brand-sub { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+
+    .hero { position: relative; z-index: 1; margin-top: 3.5rem; flex: 1; }
+    .hero-quote { font-family: 'Gowun Batang', serif; font-size: 26px; font-weight: 700; color: #fff; line-height: 1.5; margin-bottom: 1.25rem; }
+    .hero-quote em { font-style: normal; color: var(--accent-light); }
+    .hero-desc { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.9; }
+
+    .stats { position: relative; z-index: 1; display: flex; gap: 0; margin-top: 3rem; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); overflow: hidden; }
+    .stat { flex: 1; padding: 1rem 0.75rem; text-align: center; border-right: 1px solid rgba(255,255,255,0.08); }
+    .stat:last-child { border-right: none; }
+    .stat-num { font-family: 'Gowun Batang', serif; font-size: 20px; font-weight: 700; color: #fff; display: block; }
+    .stat-label { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; letter-spacing: 0.5px; }
+
+    .streak-row { position: relative; z-index: 1; margin-top: 1.25rem; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 0.875rem 1rem; }
+    .streak-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(186,117,23,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .streak-icon svg { width: 16px; height: 16px; stroke: #EF9F27; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .streak-text { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+    .streak-text strong { color: #EF9F27; font-weight: 500; }
+
+    /* RIGHT */
+    .panel-right { flex: 1; padding: 3rem 2.75rem; display: flex; flex-direction: column; justify-content: center; background: var(--surface); }
+
+    .tabs { display: flex; gap: 0; border-bottom: 1.5px solid var(--border); margin-bottom: 2rem; }
+    .tab { flex: 1; padding: 0.75rem 0; font-size: 14px; font-family: 'Noto Sans KR', sans-serif; color: var(--ink3); background: transparent; border: none; border-bottom: 2.5px solid transparent; margin-bottom: -1.5px; cursor: pointer; transition: all var(--tr); }
+    .tab.active { color: var(--ink); font-weight: 500; border-bottom-color: var(--accent); }
+
+    .form-view { display: none; animation: popIn 0.3s ease both; }
+    .form-view.active { display: block; }
+    @keyframes popIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .form-heading { margin-bottom: 1.75rem; }
+    .form-heading h2 { font-family: 'Gowun Batang', serif; font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 5px; letter-spacing: -0.3px; }
+    .form-heading p { font-size: 13px; color: var(--ink3); line-height: 1.7; }
+
+    .field { margin-bottom: 1rem; }
+    .field label { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--ink2); margin-bottom: 7px; letter-spacing: 0.3px; }
+    .field label svg { width: 13px; height: 13px; stroke: var(--ink3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--border2); border-radius: var(--radius);
+      font-size: 14px; font-family: 'Noto Sans KR', sans-serif; color: var(--ink); background: var(--surface);
+      outline: none; transition: border-color var(--tr), box-shadow var(--tr), background var(--tr);
+    }
+    input::placeholder { color: var(--ink3); }
+    input:hover { background: var(--surface2); }
+    input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(74,124,89,0.12); }
+    input.error { border-color: #E24B4A; }
+    input.error:focus { box-shadow: 0 0 0 3px rgba(226,75,74,0.1); }
+
+    .field-row { display: flex; gap: 10px; }
+    .field-row .field { flex: 1; }
+
+    .goal-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+    .goal-chip { padding: 6px 14px; border-radius: 100px; border: 1.5px solid var(--border2); background: var(--surface); font-size: 12px; color: var(--ink2); cursor: pointer; transition: all var(--tr); }
+    .goal-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+    .goal-chip.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); font-weight: 500; }
+
+    .field-footer { display: flex; justify-content: flex-end; margin-top: -6px; margin-bottom: 0.75rem; }
+    .link { font-size: 12px; color: var(--accent); cursor: pointer; text-decoration: none; transition: opacity var(--tr); }
+    .link:hover { opacity: 0.7; }
+
+    .pw-strength { margin-top: 7px; display: none; }
+    .pw-bars { display: flex; gap: 4px; margin-bottom: 5px; }
+    .pw-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background 0.35s; }
+    .pw-bar.w { background: #E24B4A; }
+    .pw-bar.m { background: var(--amber); }
+    .pw-bar.s { background: var(--accent); }
+    .pw-label { font-size: 11px; color: var(--ink3); }
+
+    .btn-submit { width: 100%; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; font-family: 'Noto Sans KR', sans-serif; cursor: pointer; letter-spacing: 0.2px; transition: background var(--tr), transform 0.1s, box-shadow var(--tr); display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-submit:hover { background: #3A6145; box-shadow: 0 4px 18px rgba(74,124,89,0.3); }
+    .btn-submit:active { transform: scale(0.99); }
+    .btn-submit.loading { pointer-events: none; opacity: 0.75; }
+    .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .btn-submit.loading .btn-lbl { display: none; }
+    .btn-submit.loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .divider { display: flex; align-items: center; gap: 10px; margin: 1.25rem 0; color: var(--ink3); font-size: 12px; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    .social-row { display: flex; gap: 8px; }
+    .btn-social { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border: 1.5px solid var(--border2); border-radius: var(--radius); background: var(--surface); font-size: 13px; font-family: 'Noto Sans KR', sans-serif; color: var(--ink2); cursor: pointer; transition: all var(--tr); }
+    .btn-social:hover { background: var(--surface2); color: var(--ink); }
+    .btn-social svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .terms { font-size: 11px; color: var(--ink3); text-align: center; margin-top: 1.25rem; line-height: 1.9; }
+    .terms a { color: var(--accent); text-decoration: none; }
+
+    .err-msg { font-size: 11px; color: #E24B4A; margin-top: 4px; display: none; }
+    .err-msg.show { display: block; }
+
+    #toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-80px); background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); box-shadow: 0 8px 32px rgba(28,26,22,0.15); z-index: 200; opacity: 0; white-space: nowrap; transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s; }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .t-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    #toast.success .t-icon { background: var(--accent-bg); }
+    #toast.success .t-icon svg { stroke: var(--accent); }
+    #toast.error .t-icon { background: #FCEBEB; }
+    #toast.error .t-icon svg { stroke: #E24B4A; }
+    .t-icon svg { width: 12px; height: 12px; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+
+    @media (max-width: 720px) { .panel-left { display: none; } .panel-right { padding: 2rem 1.5rem; } }
+  </style>
+</head>
+<body>
+
+<div class="bg-wrap">
+  <div class="bg-circle c1"></div>
+  <div class="bg-circle c2"></div>
+  <div class="deco d1"><svg width="80" height="80" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+  <div class="deco d2"><svg width="60" height="60" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+  <div class="deco d3"><svg width="90" height="90" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+  <div class="deco d4"><svg width="50" height="50" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+</div>
+
+<div id="toast">
+  <span class="t-icon"><svg id="t-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+  <span id="t-msg">완료!</span>
+</div>
+
+<div class="page">
+  <div class="card">
+
+    <div class="panel-left">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">StudyFlow</div>
+          <div class="brand-sub">나만의 학습 관리</div>
+        </div>
+      </div>
+
+      <div class="hero">
+        <p class="hero-quote">꾸준함이<br><em>실력</em>이 됩니다</p>
+        <p class="hero-desc">목표를 세우고, 학습을 기록하고,<br>성장을 눈으로 확인하세요.<br>작은 습관이 큰 변화를 만듭니다.</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span class="stat-num">12,400+</span><span class="stat-label">학습자</span></div>
+        <div class="stat"><span class="stat-num">98만+</span><span class="stat-label">학습 기록</span></div>
+        <div class="stat"><span class="stat-num">91%</span><span class="stat-label">목표 달성률</span></div>
+      </div>
+
+      <div class="streak-row">
+        <div class="streak-icon">
+          <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <p class="streak-text">오늘도 공부한 <strong>3,200명</strong>이<br>스트릭을 이어가고 있어요 🔥</p>
+      </div>
+    </div>
+
+    <div class="panel-right">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('login')">로그인</button>
+        <button class="tab" onclick="switchTab('signup')">회원가입</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="form-view active" id="view-login">
+        <div class="form-heading">
+          <h2>다시 돌아오셨군요 📖</h2>
+          <p>오늘의 학습을 시작해 볼까요?</p>
+        </div>
+
+        <div class="field">
+          <label>
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+            이메일
+          </label>
+          <input type="email" id="l-email" placeholder="study@example.com" oninput="clearE(this,'le-err')"/>
+          <p class="err-msg" id="le-err">유효한 이메일을 입력해 주세요.</p>
+        </div>
+
+        <div class="field">
+          <label>
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            비밀번호
+          </label>
+          <input type="password" id="l-pw" placeholder="비밀번호 입력" oninput="clearE(this,'lp-err')"/>
+          <p class="err-msg" id="lp-err">비밀번호를 입력해 주세요.</p>
+        </div>
+
+        <div class="field-footer">
+          <a class="link" href="#">비밀번호를 잊으셨나요?</a>
+        </div>
+
+        <button class="btn-submit" id="btn-login" onclick="doLogin()">
+          <span class="btn-lbl">학습 시작하기</span>
+          <div class="spinner"></div>
+        </button>
+
+        <div class="divider">또는 소셜 계정으로</div>
+        <div class="social-row">
+          <button class="btn-social" onclick="social('Google')">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Google
+          </button>
+          <button class="btn-social" onclick="social('카카오')">
+            <svg viewBox="0 0 24 24" width="16" height="16"><ellipse cx="12" cy="11" rx="10" ry="9" fill="#FEE500"/><path d="M12 6.5c-3.31 0-6 1.97-6 4.4 0 1.56.99 2.93 2.5 3.74l-.64 2.36 2.76-1.82A7.4 7.4 0 0 0 12 15.3c3.31 0 6-1.97 6-4.4S15.31 6.5 12 6.5z" fill="#3A1D1D"/></svg>
+            카카오
+          </button>
+        </div>
+      </div>
+
+      <!-- SIGNUP -->
+      <div class="form-view" id="view-signup">
+        <div class="form-heading">
+          <h2>학습 여정 시작하기 🌱</h2>
+          <p>계정을 만들고 오늘부터 기록해 보세요.</p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>이름</label>
+            <input type="text" id="s-name" placeholder="홍길동" oninput="clearE(this,'sn-err')"/>
+          </div>
+          <div class="field">
+            <label>닉네임</label>
+            <input type="text" id="s-nick" placeholder="공부왕" oninput="clearE(this,'sn-err')"/>
+          </div>
+        </div>
+        <p class="err-msg" id="sn-err">이름과 닉네임을 입력해 주세요.</p>
+
+        <div class="field">
+          <label>
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+            이메일
+          </label>
+          <input type="email" id="s-email" placeholder="study@example.com" oninput="clearE(this,'se-err')"/>
+          <p class="err-msg" id="se-err">유효한 이메일을 입력해 주세요.</p>
+        </div>
+
+        <div class="field">
+          <label>
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            비밀번호
+          </label>
+          <input type="password" id="s-pw" placeholder="8자 이상 입력" oninput="pwStr(this.value); clearE(this,'sp-err')"/>
+          <div class="pw-strength" id="pw-wrap">
+            <div class="pw-bars">
+              <div class="pw-bar" id="b1"></div>
+              <div class="pw-bar" id="b2"></div>
+              <div class="pw-bar" id="b3"></div>
+            </div>
+            <span class="pw-label" id="pw-lbl">약함</span>
+          </div>
+          <p class="err-msg" id="sp-err">비밀번호는 8자 이상이어야 합니다.</p>
+        </div>
+
+        <div class="field">
+          <label>학습 목표 선택 (선택사항)</label>
+          <div class="goal-row">
+            <span class="goal-chip" onclick="toggleGoal(this)">📚 자격증</span>
+            <span class="goal-chip" onclick="toggleGoal(this)">💻 프로그래밍</span>
+            <span class="goal-chip" onclick="toggleGoal(this)">🌏 어학</span>
+            <span class="goal-chip" onclick="toggleGoal(this)">📐 수학/과학</span>
+            <span class="goal-chip" onclick="toggleGoal(this)">🎨 기타</span>
+          </div>
+        </div>
+
+        <button class="btn-submit" id="btn-signup" onclick="doSignup()">
+          <span class="btn-lbl">무료로 시작하기</span>
+          <div class="spinner"></div>
+        </button>
+
+        <p class="terms">가입하면 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의합니다.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function switchTab(t) {
+    document.querySelectorAll('.tab').forEach((el,i)=> el.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='signup')));
+    document.querySelectorAll('.form-view').forEach(v=> v.classList.remove('active'));
+    document.getElementById('view-'+t).classList.add('active');
+    document.querySelectorAll('.err-msg').forEach(e=>e.classList.remove('show'));
+    document.querySelectorAll('input').forEach(i=>i.classList.remove('error'));
+  }
+
+  let _tt;
+  function toast(msg, type='success') {
+    const el=document.getElementById('toast');
+    const svg=document.getElementById('t-svg');
+    document.getElementById('t-msg').textContent=msg;
+    el.className='show '+type;
+    svg.innerHTML=type==='success'
+      ?'<polyline points="20 6 9 17 4 12"></polyline>'
+      :'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+    clearTimeout(_tt);
+    _tt=setTimeout(()=>{ el.className=''; },3500);
+  }
+
+  const isEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  function clearE(inp,eid){ inp.classList.remove('error'); document.getElementById(eid).classList.remove('show'); }
+  function markE(iid,eid){ document.getElementById(iid).classList.add('error'); document.getElementById(eid).classList.add('show'); }
+  function showErr(eid){ document.getElementById(eid).classList.add('show'); }
+  function toggleGoal(el){ el.classList.toggle('selected'); }
+
+  function pwStr(v){
+    const w=document.getElementById('pw-wrap');
+    const lbl=document.getElementById('pw-lbl');
+    const bars=['b1','b2','b3'].map(id=>document.getElementById(id));
+    if(!v){ w.style.display='none'; return; }
+    w.style.display='block';
+    let s=0;
+    if(v.length>=8) s++;
+    if(/[A-Z]/.test(v)||/[0-9]/.test(v)) s++;
+    if(/[^A-Za-z0-9]/.test(v)&&v.length>=10) s++;
+    const cls=['','w','m','s'];
+    const lbls=['','약함','보통','강력'];
+    bars.forEach((b,i)=>{ b.className='pw-bar'+(i<s?' '+cls[s]:''); });
+    lbl.textContent=lbls[s]||'약함';
+  }
+
+  function fakeAsync(btnId,fn){
+    const btn=document.getElementById(btnId);
+    btn.classList.add('loading');
+    setTimeout(()=>{ btn.classList.remove('loading'); fn(); },1300);
+  }
+
+  function doLogin(){
+    const email=document.getElementById('l-email').value.trim();
+    const pw=document.getElementById('l-pw').value;
+    let ok=true;
+    if(!isEmail(email)){ markE('l-email','le-err'); ok=false; }
+    if(!pw){ markE('l-pw','lp-err'); ok=false; }
+    if(!ok) return;
+    fakeAsync('btn-login',()=> toast('로그인 성공! 오늘도 화이팅 💪'));
+  }
+
+  function doSignup(){
+    const name=document.getElementById('s-name').value.trim();
+    const nick=document.getElementById('s-nick').value.trim();
+    const email=document.getElementById('s-email').value.trim();
+    const pw=document.getElementById('s-pw').value;
+    let ok=true;
+    if(!name||!nick){
+      document.getElementById('s-name').classList.add('error');
+      document.getElementById('s-nick').classList.add('error');
+      showErr('sn-err'); ok=false;
+    }
+    if(!isEmail(email)){ markE('s-email','se-err'); ok=false; }
+    if(pw.length<8){ markE('s-pw','sp-err'); ok=false; }
+    if(!ok) return;
+    fakeAsync('btn-signup',()=>{
+      toast('가입 완료! 학습 여정을 시작해요 🌱');
+      setTimeout(()=> switchTab('login'),400);
+    });
+  }
+
+  function social(p){ toast(p+' 로그인은 백엔드 연동이 필요합니다.','error'); }
+
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    if(document.getElementById('view-login').classList.contains('active')) doLogin();
+    else doSignup();
+  });
+</script>
+</body>
+</html>
