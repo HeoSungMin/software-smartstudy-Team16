@@ -1,5 +1,5 @@
-# 1. 자바 17 버전 환경을 빌려옵니다.
-FROM openjdk:17-jdk-slim
+# 1. 지원 종료된 openjdk 대신 공식 지원되는 eclipse-temurin 자바 17을 씁니다.
+FROM eclipse-temurin:17-jdk-jammy
 
 # 2. 작업할 폴더를 만듭니다.
 WORKDIR /app
@@ -14,4 +14,4 @@ RUN chmod +x mvnw
 RUN ./mvnw clean package -DskipTests
 
 # 5. 빌드가 완료되면 생성된 jar 파일을 실행합니다.
-CMD ["java", "-jar", "target/studyapp-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "target/studyapp-0.0.1-SNAPSHOT.git"]
