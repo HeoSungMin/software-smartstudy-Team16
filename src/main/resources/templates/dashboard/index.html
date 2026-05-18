@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>대시보드 - StudyApp</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <style>
+    .timetable-wrapper { overflow-x: auto; }
+    .tt-grid {
+      display: grid;
+      grid-template-columns: 48px repeat(5, 1fr);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      min-width: 600px;
+    }
+    .tt-header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 4px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+    .tt-time {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 4px 6px;
+      font-size: 10px;
+      color: var(--text-sub);
+      text-align: right;
+      background: var(--bg);
+    }
+    .tt-cell {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      height: 40px;
+      position: relative;
+    }
+    .tt-cell:last-child { border-right: none; }
+    .tt-block {
+      position: absolute;
+      left: 2px; right: 2px;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      overflow: hidden;
+      z-index: 2;
+      transition: filter 0.15s;
+      line-height: 1.3;
+    }
+    .tt-block:hover { filter: brightness(0.9); }
+    .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap:12px; margin-bottom:20px; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label { font-size: 12px; color: var(--text-sub); font-weight: 500; }
+    .stat-value { font-size: 24px; font-weight: 700; letter-spacing: -1px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <div th:replace="~{fragments/sidebar :: sidebar('dashboard')}"></div>
+  <main class="main-content">
+    <div class="page-header">
+      <div class="page-title" th:text="'안녕하세요, ' + ${user.name} + '님 👋'"></div>
+      <div class="page-subtitle" id="today-date"></div>
+    </div>
+
+    <!-- 통계 -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">이번 주 수업</div>
+        <div class="stat-value" th:text="${schedules.size()}">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">다가오는 일정</div>
+        <div class="stat-value" th:text="${eventsWithDday.size()}">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">가장 빠른 마감</div>
+        <div class="stat-value" th:if="${eventsWithDday.size() > 0}"
+             th:text="'D-' + ${eventsWithDday[0].dday >= 0 ? eventsWithDday[0].dday : '지남'}"
+             style="font-size:18px"></div>
+        <div class="stat-value" th:unless="${eventsWithDday.size() > 0}" style="font-size:18px">없음</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="align-items:start; gap:20px;">
+      <!-- 주간 시간표 -->
+      <div class="card" style="grid-column: span 1;">
+        <div class="card-title" style="display:flex; align-items:center; justify-content:space-between;">
+          주간 시간표
+          <a th:href="@{/schedule}" class="btn btn-secondary btn-sm">편집</a>
+        </div>
+        <div class="timetable-wrapper">
+          <div class="tt-grid" id="timetable">
+            <!-- headers -->
+            <div class="tt-header"></div>
+            <div class="tt-header">월</div>
+            <div class="tt-header">화</div>
+            <div class="tt-header">수</div>
+            <div class="tt-header">목</div>
+            <div class="tt-header">금</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D-Day 일정 -->
+      <div class="card">
+        <div class="card-title" style="display:flex; align-items:center; justify-content:space-between;">
+          D-Day 일정
+          <a th:href="@{/events}" class="btn btn-secondary btn-sm">+ 추가</a>
+        </div>
+        <div th:if="${eventsWithDday.empty}" style="text-align:center; padding:30px; color:var(--text-sub); font-size:13px">
+          등록된 일정이 없습니다
+        </div>
+        <div th:each="item : ${eventsWithDday}">
+          <div class="dday-card">
+            <div>
+              <div style="font-weight:600; font-size:14px" th:text="${item.event.title}"></div>
+              <div style="font-size:12px; color:var(--text-sub); margin-top:2px">
+                <span th:text="${item.event.subjectName}"></span>
+                <span th:text="${' · ' + item.event.dueDate}"></span>
+              </div>
+              <span class="badge"
+                th:classappend="${item.event.type == 'EXAM'} ? 'badge-red' : (${item.event.type == 'ASSIGNMENT'} ? 'badge-blue' : 'badge-green')"
+                th:text="${item.event.type == 'EXAM'} ? '시험' : (${item.event.type == 'ASSIGNMENT'} ? '과제' : '기타')">
+              </span>
+            </div>
+            <div class="dday-badge"
+              th:classappend="${item.dday <= 3} ? 'dday-urgent' : (${item.dday <= 7} ? 'dday-soon' : 'dday-normal')"
+              th:text="${item.dday == 0} ? 'D-Day' : ('D-' + item.dday)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script th:inline="javascript">
+  // 날짜 표시
+  const days = ['일','월','화','수','목','금','토'];
+  const now = new Date();
+  document.getElementById('today-date').textContent =
+    `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
+
+  // 시간표 렌더링
+  const schedules = /*[[${schedules}]]*/ [];
+  const START_HOUR = 8;
+  const END_HOUR = 22;
+  const CELL_HEIGHT = 40;
+  const grid = document.getElementById('timetable');
+
+  for (let h = START_HOUR; h <= END_HOUR; h++) {
+    const timeCell = document.createElement('div');
+    timeCell.className = 'tt-time';
+    timeCell.textContent = `${h}:00`;
+    grid.appendChild(timeCell);
+
+    for (let d = 1; d <= 5; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'tt-cell';
+      cell.dataset.hour = h;
+      cell.dataset.day = d;
+      grid.appendChild(cell);
+    }
+  }
+
+  schedules.forEach(s => {
+    const startTotal = s.startHour * 60 + s.startMinute;
+    const endTotal = s.endHour * 60 + s.endMinute;
+    const topOffset = (s.startHour - START_HOUR) * CELL_HEIGHT + (s.startMinute / 60) * CELL_HEIGHT;
+    const height = ((endTotal - startTotal) / 60) * CELL_HEIGHT;
+
+    const dayCol = grid.querySelectorAll(`.tt-cell[data-day="${s.dayOfWeek}"]`);
+    if (dayCol.length === 0) return;
+    const refCell = dayCol[0];
+
+    const block = document.createElement('div');
+    block.className = 'tt-block';
+    block.style.cssText = `
+      background: ${s.color || '#2563eb'};
+      top: ${topOffset + 1}px;
+      height: ${height - 2}px;
+      position: absolute;
+    `;
+    block.innerHTML = `<div>${s.subjectName}</div><div style="font-weight:400;opacity:.85">${s.room||''}</div>`;
+    block.onclick = () => window.location.href = `/schedule`;
+
+    const col = grid.querySelector(`.tt-cell[data-day="${s.dayOfWeek}"][data-hour="${START_HOUR}"]`);
+    if (col) {
+      col.style.position = 'relative';
+      const wrapper = col.parentElement || grid;
+      // append to day column container - find first cell of that day
+      const allDayCells = [...grid.querySelectorAll(`.tt-cell[data-day="${s.dayOfWeek}"]`)];
+      if (allDayCells[0]) {
+        const container = document.createElement('div');
+        container.style.cssText = `position:absolute; top:${topOffset}px; height:${height}px; left:0; right:0; z-index:2;`;
+        container.appendChild(block);
+        allDayCells[0].style.overflow = 'visible';
+        allDayCells[0].appendChild(container);
+      }
+    }
+  });
+</script>
+</body>
+</html>
