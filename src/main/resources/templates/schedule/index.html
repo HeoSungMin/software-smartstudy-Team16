@@ -5,48 +5,106 @@
   <title>시간표 - StudyApp</title>
   <link rel="stylesheet" th:href="@{/css/main.css}">
   <style>
-    .color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-picker { display:flex; gap:8px; flex-wrap:wrap; }
     .color-dot {
-      width: 24px; height: 24px; border-radius: 50%;
-      cursor: pointer; border: 2px solid transparent;
-      transition: transform 0.1s;
+      width:24px; height:24px; border-radius:50%; cursor:pointer;
+      border:2px solid transparent; transition:transform .12s;
     }
-    .color-dot.selected, .color-dot:hover { border-color: #1a1a1a; transform: scale(1.15); }
+    .color-dot.selected, .color-dot:hover { border-color:#1a1a1a; transform:scale(1.18); }
+
     .tt-full {
-      display: grid;
-      grid-template-columns: 52px repeat(5, 1fr);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      min-width: 640px;
-      position: relative;
+      display:grid;
+      grid-template-columns:52px repeat(5,1fr);
+      border:1px solid var(--border); border-radius:10px;
+      overflow:hidden; min-width:640px; position:relative;
     }
     .tt-head { background:var(--bg); border-bottom:1px solid var(--border); padding:10px 4px; text-align:center; font-weight:600; font-size:13px; color:var(--text-sub); }
     .tt-time-label { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:4px 8px 4px 4px; font-size:10px; color:var(--text-sub); text-align:right; background:var(--bg); height:48px; }
-    .tt-slot { border-right:1px solid var(--border); border-bottom:1px solid var(--border); height:48px; position:relative; cursor:pointer; transition:background 0.1s; }
-    .tt-slot:hover { background: var(--accent-light); }
+    .tt-slot { border-right:1px solid var(--border); border-bottom:1px solid var(--border); height:48px; position:relative; cursor:pointer; transition:background .1s; }
+    .tt-slot:hover { background:var(--accent-light); }
     .tt-slot:last-child { border-right:none; }
     .tt-block {
       position:absolute; left:2px; right:2px; border-radius:6px;
-      padding:4px 7px; font-size:11px; font-weight:600;
-      color:white; cursor:pointer; overflow:hidden; z-index:3;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      transition: filter 0.15s, box-shadow 0.15s;
+      padding:4px 7px; font-size:11px; font-weight:600; color:white;
+      cursor:pointer; overflow:hidden; z-index:3;
+      box-shadow:0 2px 8px rgba(0,0,0,.15);
+      transition:filter .15s, box-shadow .15s;
     }
     .tt-block:hover { filter:brightness(.88); box-shadow:0 4px 12px rgba(0,0,0,.2); }
-    .day-col { position: relative; }
+
+    /* 탭 */
+    .tab-bar { display:flex; border-bottom:2px solid var(--border); margin-bottom:20px; }
+    .tab { padding:10px 20px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-sub); border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .15s; }
+    .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+    /* 과목 카테고리 */
+    .cat-section { margin-bottom:20px; }
+    .cat-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-sub); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .cat-badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; }
+    .cat-major    { background:#eff6ff; color:#2563eb; }
+    .cat-required { background:#fef2f2; color:#dc2626; }
+    .cat-liberal  { background:#f0fdf4; color:#16a34a; }
+
+    /* 과목 카드 */
+    .subject-card {
+      border:1px solid var(--border); border-radius:10px;
+      padding:12px 14px; margin-bottom:8px; cursor:pointer;
+      transition:border-color .15s, box-shadow .15s; position:relative;
+    }
+    .subject-card:hover { border-color:var(--accent); box-shadow:0 2px 8px rgba(37,99,235,.1); }
+    .subject-card.selected { border-color:var(--accent); background:var(--accent-light); }
+    .subject-card .sc-name { font-weight:600; font-size:14px; }
+    .subject-card .sc-meta { font-size:12px; color:var(--text-sub); margin-top:3px; }
+    .subject-card .sc-check {
+      position:absolute; right:12px; top:50%; transform:translateY(-50%);
+      width:20px; height:20px; border-radius:50%; background:var(--accent);
+      color:white; display:none; align-items:center; justify-content:center; font-size:12px;
+    }
+    .subject-card.selected .sc-check { display:flex; }
+
+    .search-wrap { position:relative; margin-bottom:16px; }
+    .search-wrap input { padding-left:36px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-sub); }
+
+    .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; margin:30px auto; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .bulk-bar {
+      display:none; position:sticky; bottom:0;
+      background:var(--surface); border-top:1px solid var(--border);
+      padding:12px 16px; align-items:center; justify-content:space-between; gap:12px; z-index:10;
+    }
+    .bulk-bar.visible { display:flex; }
+
+    .modal-wide { width:600px; max-height:82vh; display:flex; flex-direction:column; }
+    .modal-wide .modal-body { overflow-y:auto; flex:1; padding-right:4px; }
+
+    .time-panel { border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:10px; background:var(--bg); }
+    .time-panel-title { font-weight:600; font-size:13px; margin-bottom:10px; }
+
+    .empty-state { text-align:center; padding:40px 20px; color:var(--text-sub); font-size:13px; }
+    .empty-state svg { width:40px; height:40px; margin-bottom:12px; opacity:.3; display:block; margin-left:auto; margin-right:auto; }
+
+    .hint-bar { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-sub); margin-top:10px; }
   </style>
 </head>
 <body>
 <div class="app-layout">
   <div th:replace="~{fragments/sidebar :: sidebar('schedule')}"></div>
   <main class="main-content">
+
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
       <div>
         <div class="page-title">시간표</div>
-        <div class="page-subtitle">수업 블록을 클릭하면 메모를 작성할 수 있습니다</div>
+        <div class="page-subtitle">셀을 클릭하면 해당 시간에 바로 수업을 추가할 수 있습니다</div>
       </div>
-      <button class="btn btn-primary" onclick="openAddModal()">+ 수업 추가</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="openUnivModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          대학 강의 검색
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">+ 직접 추가</button>
+      </div>
     </div>
 
     <div class="card">
@@ -60,11 +118,15 @@
           <div class="tt-head">금</div>
         </div>
       </div>
+      <div class="hint-bar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        빈 셀을 클릭하면 해당 시간·요일이 자동으로 채워진 추가 창이 열려요
+      </div>
     </div>
   </main>
 </div>
 
-<!-- 수업 추가 모달 -->
+<!-- ── 모달 1: 직접 추가 ───────────────────── -->
 <div class="modal-overlay" id="addModal">
   <div class="modal">
     <div class="modal-header">
@@ -72,7 +134,7 @@
       <button class="modal-close" onclick="closeModal('addModal')">×</button>
     </div>
     <div class="form-group">
-      <label class="form-label">과목명</label>
+      <label class="form-label">과목명 <span style="color:var(--danger)">*</span></label>
       <input type="text" id="subjectName" class="form-input" placeholder="예: 알고리즘">
     </div>
     <div class="grid-2">
@@ -86,13 +148,10 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">요일</label>
+      <label class="form-label">요일 <span style="color:var(--danger)">*</span></label>
       <select id="dayOfWeek" class="form-input">
-        <option value="1">월요일</option>
-        <option value="2">화요일</option>
-        <option value="3">수요일</option>
-        <option value="4">목요일</option>
-        <option value="5">금요일</option>
+        <option value="1">월요일</option><option value="2">화요일</option>
+        <option value="3">수요일</option><option value="4">목요일</option><option value="5">금요일</option>
       </select>
     </div>
     <div class="grid-2">
@@ -108,36 +167,36 @@
     <div class="form-group">
       <label class="form-label">색상</label>
       <div class="color-picker" id="colorPicker">
-        <div class="color-dot selected" style="background:#2563eb" data-color="#2563eb" onclick="selectColor(this)"></div>
-        <div class="color-dot" style="background:#7c3aed" data-color="#7c3aed" onclick="selectColor(this)"></div>
-        <div class="color-dot" style="background:#db2777" data-color="#db2777" onclick="selectColor(this)"></div>
-        <div class="color-dot" style="background:#dc2626" data-color="#dc2626" onclick="selectColor(this)"></div>
-        <div class="color-dot" style="background:#d97706" data-color="#d97706" onclick="selectColor(this)"></div>
-        <div class="color-dot" style="background:#16a34a" data-color="#16a34a" onclick="selectColor(this)"></div>
-        <div class="color-dot" style="background:#0891b2" data-color="#0891b2" onclick="selectColor(this)"></div>
-        <div class="color-dot" style="background:#475569" data-color="#475569" onclick="selectColor(this)"></div>
+        <div class="color-dot selected" style="background:#2563eb" data-color="#2563eb" onclick="selectColor(this,'colorPicker')"></div>
+        <div class="color-dot" style="background:#7c3aed" data-color="#7c3aed" onclick="selectColor(this,'colorPicker')"></div>
+        <div class="color-dot" style="background:#db2777" data-color="#db2777" onclick="selectColor(this,'colorPicker')"></div>
+        <div class="color-dot" style="background:#dc2626" data-color="#dc2626" onclick="selectColor(this,'colorPicker')"></div>
+        <div class="color-dot" style="background:#d97706" data-color="#d97706" onclick="selectColor(this,'colorPicker')"></div>
+        <div class="color-dot" style="background:#16a34a" data-color="#16a34a" onclick="selectColor(this,'colorPicker')"></div>
+        <div class="color-dot" style="background:#0891b2" data-color="#0891b2" onclick="selectColor(this,'colorPicker')"></div>
+        <div class="color-dot" style="background:#475569" data-color="#475569" onclick="selectColor(this,'colorPicker')"></div>
       </div>
     </div>
-    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px">
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
       <button class="btn btn-secondary" onclick="closeModal('addModal')">취소</button>
       <button class="btn btn-primary" onclick="addSchedule()">추가</button>
     </div>
   </div>
 </div>
 
-<!-- 과목 메모 모달 (F-4) -->
+<!-- ── 모달 2: 과목 메모 ──────────────────── -->
 <div class="modal-overlay" id="memoModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="memoTitle">과목 상세</div>
       <button class="modal-close" onclick="closeModal('memoModal')">×</button>
     </div>
-    <div id="memoInfo" style="background:var(--bg); border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px; color:var(--text-sub);"></div>
+    <div id="memoInfo" style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text-sub)"></div>
     <div class="form-group">
       <label class="form-label">📝 메모</label>
       <textarea id="memoContent" class="form-input" rows="5" placeholder="수업 관련 메모를 작성하세요..." style="resize:vertical"></textarea>
     </div>
-    <div style="display:flex; gap:8px; justify-content:space-between; margin-top:8px">
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:8px">
       <button class="btn btn-danger btn-sm" onclick="deleteSchedule()">삭제</button>
       <div style="display:flex;gap:8px">
         <button class="btn btn-secondary" onclick="closeModal('memoModal')">닫기</button>
@@ -147,126 +206,410 @@
   </div>
 </div>
 
+<!-- ── 모달 3: 대학 강의 검색 ────────────── -->
+<div class="modal-overlay" id="univModal">
+  <div class="modal modal-wide">
+    <div class="modal-header" style="flex-shrink:0">
+      <div class="modal-title">대학 강의 검색</div>
+      <button class="modal-close" onclick="closeModal('univModal')">×</button>
+    </div>
+
+    <div class="tab-bar" style="flex-shrink:0">
+      <div class="tab active" id="tab-search" onclick="switchTab('search')">🔍 강의 검색</div>
+      <div class="tab" id="tab-selected" onclick="switchTab('selected')">
+        ✅ 선택한 과목
+        <span id="selectedCount" style="background:var(--accent);color:white;border-radius:99px;padding:1px 7px;font-size:11px;margin-left:4px">0</span>
+      </div>
+    </div>
+
+    <!-- 검색 패널 -->
+    <div id="panel-search" class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div class="search-wrap" style="flex:1;margin:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="univInput" class="form-input" placeholder="대학교명 입력 (예: 경상국립대학교, 연세대학교...)" onkeydown="if(event.key==='Enter')searchCourses()">
+        </div>
+        <button class="btn btn-primary" onclick="searchCourses()" style="flex-shrink:0">검색</button>
+      </div>
+
+      <div id="deptFilter" style="display:none;margin-bottom:14px">
+        <div class="search-wrap" style="margin:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="subjectFilter" class="form-input" placeholder="과목명·학과로 필터..." oninput="filterSubjects()">
+        </div>
+      </div>
+
+      <div id="courseResults">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          대학교명을 입력하고 검색하면<br>전공필수 / 전공선택 / 교양 과목 목록이 나타납니다
+        </div>
+      </div>
+    </div>
+
+    <!-- 선택 과목 패널 -->
+    <div id="panel-selected" class="modal-body" style="display:none">
+      <div id="selectedList"></div>
+      <div id="selectedEmpty" class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        선택한 과목이 없습니다.<br>검색 탭에서 과목을 선택해주세요.
+      </div>
+    </div>
+
+    <!-- 하단 선택 바 -->
+    <div class="bulk-bar" id="bulkBar">
+      <div style="font-size:13px;font-weight:600" id="bulkCountText">0개 선택됨</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="clearSelections()">선택 해제</button>
+        <button class="btn btn-primary btn-sm" onclick="openBulkTimeModal()">시간 설정 후 등록 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달 4: 일괄 시간 설정 ───────────── -->
+<div class="modal-overlay" id="bulkTimeModal">
+  <div class="modal modal-wide">
+    <div class="modal-header" style="flex-shrink:0">
+      <div class="modal-title">시간표 등록 — 시간 설정</div>
+      <button class="modal-close" onclick="closeModal('bulkTimeModal')">×</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:16px;flex-shrink:0">
+      선택한 각 과목의 요일과 시간을 설정하세요.
+    </p>
+    <div class="modal-body" id="bulkTimeBody"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border);flex-shrink:0;margin-top:8px">
+      <button class="btn btn-secondary" onclick="closeModal('bulkTimeModal')">취소</button>
+      <button class="btn btn-primary" id="bulkRegisterBtn" onclick="bulkRegister()">📚 시간표에 등록</button>
+    </div>
+  </div>
+</div>
+
 <script th:inline="javascript">
-  const schedules = /*[[${schedules}]]*/ [];
-  const START_HOUR = 8, END_HOUR = 22, CELL_H = 48;
-  let selectedColor = '#2563eb';
-  let currentScheduleId = null;
+const schedules = /*[[${schedules}]]*/ [];
+const START_HOUR = 8, END_HOUR = 22, CELL_H = 48;
+let selectedColor = '#2563eb';
+let currentScheduleId = null;
+let allCourses = [];
+let selectedCourses = new Map();
 
-  // 시간표 렌더링
-  function renderTimetable() {
-    const grid = document.getElementById('timetable');
-    // 기존 슬롯 제거
-    grid.querySelectorAll('.tt-time-label, .tt-slot').forEach(e => e.remove());
+const PALETTE = ['#2563eb','#7c3aed','#db2777','#dc2626','#d97706','#16a34a','#0891b2','#475569'];
 
-    for (let h = START_HOUR; h <= END_HOUR; h++) {
-      const tl = document.createElement('div');
-      tl.className = 'tt-time-label';
-      tl.textContent = `${String(h).padStart(2,'0')}:00`;
-      grid.appendChild(tl);
+// ── 시간표 렌더링 ─────────────────────────
+function renderTimetable() {
+  const grid = document.getElementById('timetable');
+  grid.querySelectorAll('.tt-time-label,.tt-slot').forEach(e => e.remove());
 
-      for (let d = 1; d <= 5; d++) {
-        const slot = document.createElement('div');
-        slot.className = 'tt-slot';
-        slot.dataset.hour = h; slot.dataset.day = d;
-        grid.appendChild(slot);
-      }
+  for (let h = START_HOUR; h <= END_HOUR; h++) {
+    const tl = document.createElement('div');
+    tl.className = 'tt-time-label';
+    tl.textContent = `${String(h).padStart(2,'0')}:00`;
+    grid.appendChild(tl);
+    for (let d = 1; d <= 5; d++) {
+      const slot = document.createElement('div');
+      slot.className = 'tt-slot';
+      slot.dataset.hour = h; slot.dataset.day = d;
+      // ★ 기능 1: 셀 클릭 → 시간/요일 자동 입력
+      slot.addEventListener('click', () => openAddModalWithTime(d, h));
+      grid.appendChild(slot);
     }
+  }
+  schedules.forEach(renderBlock);
+}
 
-    // 블록 렌더링
-    schedules.forEach(s => {
-      const startM = s.startHour * 60 + s.startMinute;
-      const endM = s.endHour * 60 + s.endMinute;
-      const top = (s.startHour - START_HOUR) * CELL_H + (s.startMinute / 60) * CELL_H;
-      const height = ((endM - startM) / 60) * CELL_H;
+function renderBlock(s) {
+  const grid = document.getElementById('timetable');
+  const top    = (s.startHour - START_HOUR) * CELL_H + (s.startMinute / 60) * CELL_H;
+  const height = ((s.endHour * 60 + s.endMinute) - (s.startHour * 60 + s.startMinute)) / 60 * CELL_H;
+  const ref    = grid.querySelector(`.tt-slot[data-day="${s.dayOfWeek}"][data-hour="${START_HOUR}"]`);
+  if (!ref) return;
 
-      const refSlot = grid.querySelector(`.tt-slot[data-day="${s.dayOfWeek}"][data-hour="${START_HOUR}"]`);
-      if (!refSlot) return;
+  const block = document.createElement('div');
+  block.className = 'tt-block';
+  block.style.cssText = `background:${s.color||'#2563eb'};top:${top}px;height:${Math.max(height-3,18)}px;position:absolute;`;
+  block.innerHTML = `
+    <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.subjectName}</div>
+    <div style="font-weight:400;opacity:.85;font-size:10px">${s.room||''}</div>`;
+  block.onclick = e => { e.stopPropagation(); openMemoModal(s); };
 
-      const block = document.createElement('div');
-      block.className = 'tt-block';
-      block.style.cssText = `background:${s.color||'#2563eb'}; top:${top}px; height:${height-3}px;`;
-      block.innerHTML = `<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.subjectName}</div>
-        <div style="font-weight:400;opacity:.85;font-size:10px">${s.room||''}</div>`;
-      block.onclick = (e) => { e.stopPropagation(); openMemoModal(s); };
+  const wrap = document.createElement('div');
+  wrap.style.cssText = `position:absolute;top:${top}px;height:${height}px;left:0;right:0;z-index:3;pointer-events:none;`;
+  block.style.pointerEvents = 'all';
+  wrap.appendChild(block);
+  ref.style.overflow = 'visible';
+  ref.appendChild(wrap);
+}
 
-      refSlot.style.overflow = 'visible';
-      const wrap = document.createElement('div');
-      wrap.style.cssText = `position:absolute;top:${top}px;height:${height}px;left:0;right:0;z-index:3;pointer-events:none;`;
-      const inner = block;
-      inner.style.position = 'absolute';
-      inner.style.top = '0';
-      wrap.style.pointerEvents = 'none';
-      inner.style.pointerEvents = 'all';
-      wrap.appendChild(inner);
-      refSlot.appendChild(wrap);
+// ── 모달 유틸 ──────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+
+function selectColor(el, pickerId) {
+  document.querySelectorAll(`#${pickerId} .color-dot`).forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = el.dataset.color;
+}
+
+// ── 기능 1: 셀 클릭 ────────────────────────
+function openAddModal() {
+  resetAddForm();
+  openModal('addModal');
+}
+
+function openAddModalWithTime(day, hour) {
+  resetAddForm();
+  document.getElementById('dayOfWeek').value = String(day);
+  document.getElementById('startTime').value = `${String(hour).padStart(2,'0')}:00`;
+  document.getElementById('endTime').value   = `${String(Math.min(hour+1,23)).padStart(2,'0')}:30`;
+  openModal('addModal');
+  setTimeout(() => document.getElementById('subjectName').focus(), 80);
+}
+
+function resetAddForm() {
+  ['subjectName','professor','room'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('dayOfWeek').value = '1';
+  document.getElementById('startTime').value = '09:00';
+  document.getElementById('endTime').value   = '10:30';
+  // 색상 초기화
+  const dots = document.querySelectorAll('#colorPicker .color-dot');
+  dots.forEach(d => d.classList.remove('selected'));
+  dots[0].classList.add('selected');
+  selectedColor = '#2563eb';
+}
+
+async function addSchedule() {
+  const name = document.getElementById('subjectName').value.trim();
+  if (!name) { alert('과목명을 입력하세요.'); return; }
+  const [sh,sm] = document.getElementById('startTime').value.split(':').map(Number);
+  const [eh,em] = document.getElementById('endTime').value.split(':').map(Number);
+  if (eh*60+em <= sh*60+sm) { alert('종료 시간이 시작 시간보다 늦어야 합니다.'); return; }
+
+  const body = {
+    subjectName: name,
+    professor: document.getElementById('professor').value,
+    room:      document.getElementById('room').value,
+    dayOfWeek: parseInt(document.getElementById('dayOfWeek').value),
+    startHour:sh, startMinute:sm, endHour:eh, endMinute:em,
+    color: selectedColor
+  };
+  const res = await fetch('/schedule/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if (res.ok) { schedules.push(await res.json()); renderTimetable(); closeModal('addModal'); }
+  else alert('추가 실패. 다시 시도해주세요.');
+}
+
+// ── 메모 모달 ──────────────────────────────
+function openMemoModal(s) {
+  currentScheduleId = s.id;
+  document.getElementById('memoTitle').textContent = s.subjectName;
+  document.getElementById('memoInfo').innerHTML =
+    `<strong>요일:</strong> ${['','월','화','수','목','금'][s.dayOfWeek]} &nbsp;|&nbsp;
+     <strong>시간:</strong> ${String(s.startHour).padStart(2,'0')}:${String(s.startMinute).padStart(2,'0')} ~ ${String(s.endHour).padStart(2,'0')}:${String(s.endMinute).padStart(2,'0')}<br>
+     <strong>교수:</strong> ${s.professor||'-'} &nbsp;|&nbsp; <strong>강의실:</strong> ${s.room||'-'}`;
+  document.getElementById('memoContent').value = s.memo||'';
+  openModal('memoModal');
+}
+async function saveMemo() {
+  const memo = document.getElementById('memoContent').value;
+  const res = await fetch(`/schedule/${currentScheduleId}/memo`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({memo})});
+  if (res.ok) { const idx=schedules.findIndex(s=>s.id===currentScheduleId); if(idx>-1)schedules[idx].memo=memo; closeModal('memoModal'); }
+  else alert('저장 실패.');
+}
+async function deleteSchedule() {
+  if(!confirm('이 수업을 삭제하시겠습니까?')) return;
+  const res = await fetch(`/schedule/${currentScheduleId}`,{method:'DELETE'});
+  if(res.ok){const idx=schedules.findIndex(s=>s.id===currentScheduleId);if(idx>-1)schedules.splice(idx,1);renderTimetable();closeModal('memoModal');}
+}
+
+// ── 기능 2: 대학 강의 검색 ────────────────
+function openUnivModal() { openModal('univModal'); switchTab('search'); }
+
+function switchTab(tab) {
+  document.getElementById('panel-search').style.display   = tab==='search'   ?'block':'none';
+  document.getElementById('panel-selected').style.display = tab==='selected' ?'block':'none';
+  document.getElementById('tab-search').classList.toggle('active',   tab==='search');
+  document.getElementById('tab-selected').classList.toggle('active', tab==='selected');
+  if (tab==='selected') renderSelectedList();
+}
+
+async function searchCourses() {
+  const univ = document.getElementById('univInput').value.trim();
+  if (!univ) { alert('대학교명을 입력하세요.'); return; }
+
+  const resultsEl = document.getElementById('courseResults');
+  resultsEl.innerHTML = '<div class="spinner"></div>';
+  document.getElementById('deptFilter').style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        messages:[{role:'user',content:
+          `${univ}의 대표 강의 목록을 순수 JSON만 반환해줘 (마크다운·설명 없이).
+형식:
+{"university":"${univ}","courses":[
+  {"id":"1","name":"과목명","category":"전공필수","department":"학과명","credit":3,"professor":"홍길동","description":"한줄설명"}
+]}
+전공필수 5개, 전공선택 8개, 교양 5개 총 18개. 실제 커리큘럼 반영.`
+        }]
+      })
     });
+    const data = await res.json();
+    const text = data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+    allCourses = parsed.courses;
+    renderCourseResults(allCourses);
+    document.getElementById('deptFilter').style.display = 'block';
+  } catch(err) {
+    resultsEl.innerHTML = `<div class="alert alert-error">강의 정보를 불러오지 못했습니다.<br><small>${err.message}</small></div>`;
   }
+}
 
-  function selectColor(el) {
-    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedColor = el.dataset.color;
-  }
+function renderCourseResults(courses) {
+  const el = document.getElementById('courseResults');
+  if (!courses||courses.length===0){el.innerHTML='<div class="empty-state">검색 결과가 없습니다.</div>';return;}
 
-  function openAddModal() { document.getElementById('addModal').classList.add('active'); }
-  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+  const groups = {'전공필수':[],'전공선택':[],'교양':[]};
+  courses.forEach(c => { (groups[c.category]||groups['전공선택']).push(c); });
 
-  function openMemoModal(s) {
-    currentScheduleId = s.id;
-    document.getElementById('memoTitle').textContent = s.subjectName;
-    document.getElementById('memoInfo').innerHTML =
-      `<strong>요일:</strong> ${['','월','화','수','목','금'][s.dayOfWeek]} &nbsp;|&nbsp; 
-       <strong>시간:</strong> ${String(s.startHour).padStart(2,'0')}:${String(s.startMinute).padStart(2,'0')} ~ ${String(s.endHour).padStart(2,'0')}:${String(s.endMinute).padStart(2,'0')}<br>
-       <strong>교수:</strong> ${s.professor||'-'} &nbsp;|&nbsp; <strong>강의실:</strong> ${s.room||'-'}`;
-    document.getElementById('memoContent').value = s.memo || '';
-    document.getElementById('memoModal').classList.add('active');
-  }
+  const meta = {'전공필수':{cls:'cat-required',emoji:'🔴'},'전공선택':{cls:'cat-major',emoji:'🔵'},'교양':{cls:'cat-liberal',emoji:'🟢'}};
 
-  async function addSchedule() {
-    const name = document.getElementById('subjectName').value.trim();
-    if (!name) { alert('과목명을 입력하세요.'); return; }
-    const startTime = document.getElementById('startTime').value.split(':');
-    const endTime = document.getElementById('endTime').value.split(':');
+  el.innerHTML = Object.entries(groups).filter(([,l])=>l.length>0).map(([cat,list])=>`
+    <div class="cat-section">
+      <div class="cat-title">
+        ${meta[cat].emoji} ${cat}
+        <span class="cat-badge ${meta[cat].cls}">${list.length}개</span>
+      </div>
+      ${list.map(c=>`
+        <div class="subject-card ${selectedCourses.has(String(c.id))?'selected':''}" id="card-${c.id}" onclick="toggleSelect('${c.id}')">
+          <div class="sc-name">${c.name}</div>
+          <div class="sc-meta">${c.department} · ${c.credit}학점 · ${c.professor}</div>
+          <div class="sc-meta" style="margin-top:2px;font-size:11px">${c.description}</div>
+          <div class="sc-check">✓</div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function filterSubjects() {
+  const kw = document.getElementById('subjectFilter').value.toLowerCase();
+  renderCourseResults(allCourses.filter(c=>
+    c.name.toLowerCase().includes(kw)||c.department.toLowerCase().includes(kw)||c.professor.toLowerCase().includes(kw)
+  ));
+}
+
+function toggleSelect(id) {
+  const course = allCourses.find(c=>String(c.id)===String(id));
+  if(!course) return;
+  if(selectedCourses.has(id)) selectedCourses.delete(id);
+  else selectedCourses.set(id,{...course});
+  const card = document.getElementById(`card-${id}`);
+  if(card) card.classList.toggle('selected', selectedCourses.has(id));
+  updateBadge();
+}
+
+function updateBadge() {
+  const n = selectedCourses.size;
+  document.getElementById('selectedCount').textContent = n;
+  document.getElementById('bulkCountText').textContent = `${n}개 선택됨`;
+  document.getElementById('bulkBar').classList.toggle('visible', n>0);
+}
+
+function clearSelections() {
+  selectedCourses.clear();
+  document.querySelectorAll('.subject-card.selected').forEach(c=>c.classList.remove('selected'));
+  updateBadge();
+}
+
+function renderSelectedList() {
+  const el = document.getElementById('selectedList');
+  const empty = document.getElementById('selectedEmpty');
+  if(selectedCourses.size===0){el.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  el.innerHTML=[...selectedCourses.values()].map(c=>`
+    <div class="subject-card" style="cursor:default">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="sc-name">${c.name}</div>
+          <div class="sc-meta">${c.category} · ${c.department} · ${c.credit}학점</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="toggleSelect('${c.id}');renderSelectedList()">제거</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── 일괄 시간 설정 ────────────────────────
+function openBulkTimeModal() {
+  if(selectedCourses.size===0){alert('과목을 먼저 선택하세요.');return;}
+  closeModal('univModal');
+
+  let ci = 0;
+  document.getElementById('bulkTimeBody').innerHTML =
+    [...selectedCourses.values()].map(c=>{
+      const col = PALETTE[ci++%PALETTE.length];
+      return `
+        <div class="time-panel" id="tp-${c.id}">
+          <div class="time-panel-title" style="display:flex;align-items:center;gap:8px">
+            <span style="width:12px;height:12px;border-radius:50%;background:${col};display:inline-block;flex-shrink:0"></span>
+            ${c.name}
+            <span style="font-size:11px;font-weight:400;color:var(--text-sub)">${c.category}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div>
+              <label class="form-label" style="font-size:11px">요일</label>
+              <select class="form-input" id="bd-${c.id}" style="font-size:12px;padding:6px 8px">
+                <option value="1">월</option><option value="2">화</option>
+                <option value="3">수</option><option value="4">목</option><option value="5">금</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:11px">시작</label>
+              <input type="time" class="form-input" id="bs-${c.id}" value="09:00" style="font-size:12px;padding:6px 8px">
+            </div>
+            <div>
+              <label class="form-label" style="font-size:11px">종료</label>
+              <input type="time" class="form-input" id="be-${c.id}" value="10:30" style="font-size:12px;padding:6px 8px">
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label class="form-label" style="font-size:11px">강의실 (선택)</label>
+            <input type="text" class="form-input" id="br-${c.id}" placeholder="강의실" value="" style="font-size:12px;padding:6px 8px">
+          </div>
+          <input type="hidden" id="bc-${c.id}" value="${col}">
+          <input type="hidden" id="bp-${c.id}" value="${c.professor||''}">
+        </div>`;
+    }).join('');
+
+  openModal('bulkTimeModal');
+}
+
+async function bulkRegister() {
+  const btn = document.getElementById('bulkRegisterBtn');
+  btn.textContent = '등록 중...'; btn.disabled = true;
+  let ok = 0;
+  for (const c of selectedCourses.values()) {
+    const [sh,sm] = document.getElementById(`bs-${c.id}`).value.split(':').map(Number);
+    const [eh,em] = document.getElementById(`be-${c.id}`).value.split(':').map(Number);
     const body = {
-      subjectName: name,
-      professor: document.getElementById('professor').value,
-      room: document.getElementById('room').value,
-      dayOfWeek: parseInt(document.getElementById('dayOfWeek').value),
-      startHour: parseInt(startTime[0]), startMinute: parseInt(startTime[1]),
-      endHour: parseInt(endTime[0]), endMinute: parseInt(endTime[1]),
-      color: selectedColor
+      subjectName: c.name,
+      professor:   document.getElementById(`bp-${c.id}`).value,
+      room:        document.getElementById(`br-${c.id}`).value,
+      dayOfWeek:   parseInt(document.getElementById(`bd-${c.id}`).value),
+      startHour:sh, startMinute:sm, endHour:eh, endMinute:em,
+      color:       document.getElementById(`bc-${c.id}`).value
     };
-    const res = await fetch('/schedule/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if (res.ok) { const s = await res.json(); schedules.push(s); renderTimetable(); closeModal('addModal'); }
-    else alert('추가 실패. 다시 시도해주세요.');
+    const res = await fetch('/schedule/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(res.ok){schedules.push(await res.json());ok++;}
   }
-
-  async function saveMemo() {
-    const memo = document.getElementById('memoContent').value;
-    const res = await fetch(`/schedule/${currentScheduleId}/memo`, {
-      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({memo})
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      const idx = schedules.findIndex(s => s.id === currentScheduleId);
-      if (idx > -1) schedules[idx].memo = memo;
-      closeModal('memoModal');
-    } else alert('저장 실패.');
-  }
-
-  async function deleteSchedule() {
-    if (!confirm('이 수업을 삭제하시겠습니까?')) return;
-    const res = await fetch(`/schedule/${currentScheduleId}`, { method: 'DELETE' });
-    if (res.ok) {
-      const idx = schedules.findIndex(s => s.id === currentScheduleId);
-      if (idx > -1) schedules.splice(idx, 1);
-      renderTimetable();
-      closeModal('memoModal');
-    }
-  }
-
   renderTimetable();
+  closeModal('bulkTimeModal');
+  selectedCourses.clear(); updateBadge();
+  btn.textContent='📚 시간표에 등록'; btn.disabled=false;
+  alert(`✅ ${ok}개 과목이 시간표에 등록되었습니다!`);
+}
+
+renderTimetable();
 </script>
 </body>
 </html>
