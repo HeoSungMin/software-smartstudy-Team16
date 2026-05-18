@@ -13,8 +13,9 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 
-# 5. 빌드된 jar 파일만 쏙 빼옵니다.
-COPY --from=build /app/target/studyapp-0.0.1-SNAPSHOT.jar app.jar
+# 🌟 [이 부분을 수정] target 폴더 안의 모든 jar 파일을 실행 가능한 이름으로 가져옵니다.
+COPY --from=build /app/target/*.jar app.jar
 
-# 6. 실행합니다.
+# 5. 실행합니다.
+EXPOSE 8080
 CMD ["java", "-jar", "app.jar"]
