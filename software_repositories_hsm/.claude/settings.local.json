@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version 2>&1)",
+      "PowerShell(npm --version 2>&1)",
+      "PowerShell(npx localtunnel --port 8080 2>&1)",
+      "Read(//c/Program Files/**)",
+      "Read(//c//**)",
+      "Read(//c/Users/t0104/AppData/Local/Programs/**)",
+      "PowerShell(if \\(-not \\(Test-Path \"C:\\\\data\\\\db\"\\)\\) { New-Item -ItemType Directory -Path \"C:\\\\data\\\\db\" -Force }; Start-Process -FilePath \"C:\\\\c허승민\\\\tools\\\\mongodb-win32-x86_64-windows-7.0.9\\\\bin\\\\mongod.exe\" -ArgumentList \"--dbpath C:\\\\data\\\\db\" -NoNewWindow; Write-Host \"MongoDB 시작 중...\")",
+      "Bash(curl -s http://localhost:4040/api/tunnels)",
+      "PowerShell(Get-Process -Name java -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -Name mongod -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -Name node -ErrorAction SilentlyContinue)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/notes)",
+      "Bash(curl -s -L -o /dev/null -w \"%{http_code}\" https://short-mails-add.loca.lt/notes)"
+    ]
+  }
+}

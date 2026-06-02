@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartStudy</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #2d3748; min-height: 100vh; }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 18px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.3px; }
+
+        .btn-new {
+            background: white;
+            color: #667eea;
+            padding: 9px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.88rem;
+            transition: background 0.2s;
+        }
+        .btn-new:hover { background: #eef2ff; }
+
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 65vh;
+            text-align: center;
+        }
+        .empty-icon { font-size: 64px; margin-bottom: 20px; }
+        .empty-state h2 { font-size: 1.3rem; color: #4a5568; margin-bottom: 10px; }
+        .empty-state p { color: #a0aec0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.6; }
+        .btn-create-large {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 44px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-create-large:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* List header */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .list-header h2 { font-size: 1rem; color: #718096; font-weight: 500; }
+
+        /* Note card */
+        .note-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            transition: box-shadow 0.2s, transform 0.2s;
+            cursor: pointer;
+        }
+        .note-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .note-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #2d3748;
+            text-decoration: none;
+        }
+        .note-title:hover { color: #667eea; }
+        .note-date { font-size: 0.78rem; color: #a0aec0; }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+            min-height: 28px;
+        }
+        .keyword-tag {
+            background: #ebf4ff;
+            color: #2b6cb0;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+        .no-keywords { color: #cbd5e0; font-size: 0.82rem; font-style: italic; }
+
+        .card-bottom {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            border-top: 1px solid #f7fafc;
+            padding-top: 12px;
+        }
+        .btn-view {
+            padding: 7px 16px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-view:hover { opacity: 0.85; }
+        .btn-detail { background: #edf2f7; color: #4a5568; }
+        .btn-quiz-list {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-delete {
+            background: none;
+            border: 1px solid #e2e8f0;
+            color: #a0aec0;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-delete:hover { background: #fff5f5; color: #e53e3e; border-color: #feb2b2; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📚 SmartStudy</h1>
+    <a href="/notes/new" class="btn-new">+ 새 노트 작성</a>
+</div>
+
+<div class="container">
+
+    <!-- 빈 상태 -->
+    <div th:if="${notes.isEmpty()}" class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h2>아직 작성된 노트가 없어요</h2>
+        <p>첫 번째 노트를 작성하고<br>AI 분석을 시작해보세요!</p>
+        <a href="/notes/new" class="btn-create-large">노트 생성</a>
+    </div>
+
+    <!-- 노트 리스트 -->
+    <div th:if="${!notes.isEmpty()}">
+        <div class="list-header">
+            <h2>총 <span th:text="${notes.size()}">0</span>개의 노트</h2>
+        </div>
+
+        <div th:each="note : ${notes}" class="note-card">
+            <div class="card-top">
+                <a th:href="@{/notes/{id}(id=${note.id})}" class="note-title"
+                   th:text="${note.title != null and !note.title.isBlank() ? note.title : '제목 없음'}">노트 제목</a>
+                <span class="note-date" th:text="${note.createdAt.toLocalDate()}"></span>
+            </div>
+
+            <div class="keywords">
+                <span th:if="${note.keywords == null or note.keywords.isEmpty()}" class="no-keywords">키워드 없음</span>
+                <span th:each="kw : ${note.keywords}" class="keyword-tag" th:text="${kw}"></span>
+            </div>
+
+            <div class="card-bottom">
+                <button class="btn-delete" th:data-id="${note.id}" onclick="deleteNote(this)">삭제</button>
+                <a th:href="@{/notes/{id}(id=${note.id})}" class="btn-view btn-detail">열람</a>
+                <a th:if="${note.questions != null and !note.questions.isEmpty()}"
+                   th:href="|/notes/${note.id}#quiz|"
+                   class="btn-view btn-quiz-list">퀴즈 보기</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    async function deleteNote(btn) {
+        const id = btn.dataset.id;
+        if (!confirm('이 노트를 삭제하시겠습니까?')) return;
+        const res = await fetch('/notes/' + id, { method: 'DELETE' });
+        if (res.ok) location.reload();
+        else alert('삭제에 실패했습니다.');
+    }
+</script>
+</body>
+</html>
