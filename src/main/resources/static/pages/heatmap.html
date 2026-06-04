@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학습 히트맵 | Smart Study AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6fa;--surface:#fff;--border:#e4e6ef;
+  --text1:#1a1d27;--text2:#5a5f7a;--text3:#9499b5;
+  --accent:#4f6ef7;--accent-bg:#eef1fe;
+  --h0:#ebedf0;--h1:#c6e48b;--h2:#7bc96f;--h3:#239a3b;--h4:#196127;
+  --radius:14px;--shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--text1);padding:32px}
+.page-wrap{max-width:960px;margin:0 auto}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px}
+.page-sub{font-size:14px;color:var(--text2);margin-bottom:28px}
+.summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+.stat-label{font-size:12px;color:var(--text2);margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:700;color:var(--text1);letter-spacing:-.5px}
+.stat-value.accent{color:var(--accent)}
+.heatmap-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;box-shadow:var(--shadow);overflow-x:auto}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.card-title{font-size:16px;font-weight:700}
+.legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)}
+.legend-cell{width:11px;height:11px;border-radius:2px}
+.months-row{display:flex;min-width:max-content;margin-bottom:4px}
+.month-label{font-size:10px;color:var(--text3);width:16px;text-align:center}
+.heatmap{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;gap:3px;min-width:max-content}
+.cell{width:14px;height:14px;border-radius:2px;cursor:pointer;transition:transform .12s;position:relative}
+.cell:hover{transform:scale(1.5);z-index:10}
+.l0{background:var(--h0)}.l1{background:var(--h1)}.l2{background:var(--h2)}.l3{background:var(--h3)}.l4{background:var(--h4)}
+.day-labels{display:grid;grid-template-rows:repeat(7,14px);gap:3px;margin-right:6px;flex-shrink:0}
+.day-label{font-size:9px;color:var(--text3);line-height:14px;text-align:right}
+.tooltip{position:fixed;background:#1a1d27;color:#fff;font-size:12px;padding:6px 10px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .1s;white-space:nowrap;z-index:100}
+.dist-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;box-shadow:var(--shadow);margin-top:20px}
+.dist-row{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.dist-item{display:flex;align-items:center;gap:12px}
+.dist-name{font-size:13px;color:var(--text2);width:110px;flex-shrink:0}
+.dist-bar-bg{flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden}
+.dist-bar-fill{height:100%;border-radius:5px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.dist-min{font-size:12px;font-weight:600;color:var(--text2);min-width:44px;text-align:right}
+.skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.error-msg{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:14px 18px;border-radius:10px;font-size:14px;margin-bottom:16px;display:none}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+  <h1 class="page-title">📅 학습 히트맵</h1>
+  <p class="page-sub">일별 학습량을 시각화해 꾸준한 습관을 만들어 보세요</p>
+  <div id="errorMsg" class="error-msg">데이터를 불러오지 못했습니다.</div>
+
+  <div class="summary-row">
+    <div class="stat-card"><div class="stat-label">이번 달 공부</div><div class="stat-value accent" id="monthTotal"><span class="skeleton" style="width:60px;height:26px;display:block"></span></div></div>
+    <div class="stat-card"><div class="stat-label">연속 학습일</div><div class="stat-value" id="streakDays"><span class="skeleton" style="width:60px;height:26px;display:block"></span></div></div>
+    <div class="stat-card"><div class="stat-label">총 학습일</div><div class="stat-value" id="totalDays"><span class="skeleton" style="width:60px;height:26px;display:block"></span></div></div>
+    <div class="stat-card"><div class="stat-label">일평균 공부</div><div class="stat-value" id="avgMin"><span class="skeleton" style="width:60px;height:26px;display:block"></span></div></div>
+  </div>
+
+  <div class="heatmap-card">
+    <div class="card-head">
+      <span class="card-title">52주 학습 기록</span>
+      <div class="legend">
+        <span>적음</span>
+        <div class="legend-cell" style="background:var(--h0)"></div>
+        <div class="legend-cell" style="background:var(--h1)"></div>
+        <div class="legend-cell" style="background:var(--h2)"></div>
+        <div class="legend-cell" style="background:var(--h3)"></div>
+        <div class="legend-cell" style="background:var(--h4)"></div>
+        <span>많음</span>
+      </div>
+    </div>
+    <div style="display:flex">
+      <div class="day-labels" id="dayLabels"></div>
+      <div style="flex:1;overflow-x:auto">
+        <div class="months-row" id="monthsRow"></div>
+        <div class="heatmap" id="heatmap"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dist-card">
+    <div class="card-title">과목별 학습 분포 (이번 달)</div>
+    <div class="dist-row" id="distRow"></div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const MONTHS  = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const DAYS    = ['일','월','화','수','목','금','토'];
+const COLORS  = ['#4f6ef7','#22c55e','#f59e0b','#ef4444','#a855f7'];
+
+async function apiFetch(url) {
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(url, { headers: token ? {'Authorization':'Bearer '+token} : {} });
+    if (res.status === 401) { location.href = '/login'; return null; }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+}
+
+function fmt(d) {
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function level(min) {
+    if (!min) return 0; if (min<30) return 1; if (min<90) return 2; if (min<180) return 3; return 4;
+}
+
+function calcStats(data) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const monthStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+    let monthTotal=0, totalDays=0, totalMin=0;
+    Object.entries(data).forEach(([k,v]) => {
+        if (k.startsWith(monthStr)) monthTotal += v;
+        if (v > 0) { totalDays++; totalMin += v; }
+    });
+    // streak
+    let streak = 0;
+    for (let i=0; i<365; i++) {
+        const d = new Date(today); d.setDate(today.getDate()-i);
+        if ((data[fmt(d)]||0) > 0) streak++;
+        else if (i > 0) break;
+    }
+    document.getElementById('monthTotal').textContent = monthTotal + '분';
+    document.getElementById('streakDays').textContent  = streak + '일';
+    document.getElementById('totalDays').textContent   = totalDays + '일';
+    document.getElementById('avgMin').textContent      = (totalDays ? Math.round(totalMin/totalDays) : 0) + '분';
+}
+
+function renderDayLabels() {
+    const dl = document.getElementById('dayLabels');
+    DAYS.forEach(d => { const s=document.createElement('div'); s.className='day-label'; s.textContent=d; dl.appendChild(s); });
+}
+
+function renderHeatmap(data) {
+    const hm = document.getElementById('heatmap');
+    const mr = document.getElementById('monthsRow');
+    const tooltip = document.getElementById('tooltip');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const start = new Date(today);
+    start.setDate(today.getDate() - today.getDay() - 51*7);
+    let cur = new Date(start), lastMonth=-1, col=0;
+
+    while (cur <= today) {
+        const key = fmt(cur);
+        const min = data[key]||0;
+        const cell = document.createElement('div');
+        cell.className = 'cell l'+level(min);
+        cell.dataset.date = key; cell.dataset.min = min;
+        cell.addEventListener('mouseenter', e => {
+            const m = e.target.dataset.min;
+            tooltip.textContent = e.target.dataset.date+' · '+(m>0?m+'분 공부':'공부 없음');
+            tooltip.style.opacity='1';
+        });
+        cell.addEventListener('mousemove', e => { tooltip.style.left=(e.clientX+12)+'px'; tooltip.style.top=(e.clientY-28)+'px'; });
+        cell.addEventListener('mouseleave', () => tooltip.style.opacity='0');
+        hm.appendChild(cell);
+
+        if (cur.getDay()===0) {
+            const month = cur.getMonth();
+            if (month !== lastMonth) {
+                const span = document.createElement('span');
+                span.className='month-label'; span.textContent=MONTHS[month];
+                span.style.minWidth='17px'; mr.appendChild(span);
+                lastMonth=month;
+            }
+            col++;
+        }
+        cur.setDate(cur.getDate()+1);
+    }
+}
+
+async function renderDistribution() {
+    try {
+        const subjects = await apiFetch('/api/analytics/subjects');
+        if (!subjects || !subjects.length) return;
+        // 이번 달 과목별 공부 시간: statistics API에서 weekData 재활용
+        const stat = await apiFetch('/api/analytics/statistics');
+        if (!stat) return;
+        const row = document.getElementById('distRow');
+        const max = Math.max(...stat.weekData, 1);
+        stat.barLabels.forEach((name, i) => {
+            const min = stat.weekData[i]||0;
+            const pct = Math.round(min/max*100);
+            row.innerHTML += `<div class="dist-item">
+              <span class="dist-name">${name}</span>
+              <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div></div>
+              <span class="dist-min">${min}분</span>
+            </div>`;
+        });
+    } catch(e) { console.warn('분포 로드 실패', e); }
+}
+
+async function init() {
+    renderDayLabels();
+    try {
+        const [heatmapData, summary] = await Promise.all([
+            apiFetch('/api/analytics/heatmap?days=365'),
+            apiFetch('/api/analytics/activity-summary')
+        ]);
+        if (!heatmapData) return;
+        calcStats(heatmapData);
+        renderHeatmap(heatmapData);
+        if (summary) {
+            document.getElementById('streakDays').textContent = summary.streakDays + '일';
+        }
+        renderDistribution();
+    } catch(e) {
+        document.getElementById('errorMsg').style.display = 'block';
+        console.error(e);
+    }
+}
+
+init();
+</script>
+</body>
+</html>
