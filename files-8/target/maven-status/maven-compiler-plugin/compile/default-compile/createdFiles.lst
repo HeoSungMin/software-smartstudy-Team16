@@ -1,0 +1,10 @@
+com/smartstudy/controller/PageController.class
+com/smartstudy/recommendation/RecommendationService$SummaryStats.class
+com/smartstudy/recommendation/QuizResult.class
+com/smartstudy/config/SecurityConfig.class
+com/smartstudy/recommendation/SubjectRecommendationDto.class
+com/smartstudy/recommendation/QuizResultRepository.class
+com/smartstudy/recommendation/RecommendationController.class
+com/smartstudy/recommendation/QuizResult$QuizResultBuilder.class
+com/smartstudy/recommendation/RecommendationService.class
+com/smartstudy/SmartStudyApplication.class

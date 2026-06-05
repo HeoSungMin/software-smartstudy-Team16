@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Study AI · UI 개인화</title>
+  <link rel="stylesheet" th:href="@{/style.css}" />
+  <style>
+    /* ── 탭 ─────────────────────────────────────────────── */
+    .page-tabs {
+      display: flex; gap: 4px; padding: 0 28px;
+      background: rgba(255,255,255,0.7); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 73px; z-index: 9;
+    }
+    .page-tab {
+      padding: 10px 18px; font-size: 14px; font-weight: 500;
+      color: var(--text-soft); text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s; cursor: pointer;
+    }
+    .page-tab:hover { color: var(--text); }
+    .page-tab.active {
+      color: var(--accent); border-bottom-color: var(--accent); font-weight: 700;
+    }
+
+    /* ── 위젯 정렬 리스트 ───────────────────────────────── */
+    .sort-list { display: flex; flex-direction: column; gap: 6px; }
+    .sort-item {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--accent-soft); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px 10px; transition: opacity .15s;
+    }
+    .sort-item.disabled { opacity: 0.4; }
+    .sort-arrows { display: flex; flex-direction: column; gap: 2px; }
+    .sort-btn {
+      width: 26px; height: 22px; border: 1px solid var(--border);
+      border-radius: 6px; background: var(--panel-bg); color: var(--text-soft);
+      font-size: 10px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: background .1s, color .1s; line-height: 1;
+    }
+    .sort-btn:hover:not(:disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .sort-btn:disabled { opacity: 0.22; cursor: default; }
+    .sort-icon { font-size: 18px; flex-shrink: 0; }
+    .sort-name { font-size: 13px; font-weight: 500; flex: 1; color: var(--text); }
+
+    /* 전체 너비 토글 버튼 */
+    .wide-btn {
+      width: 30px; height: 28px; padding: 0; flex-shrink: 0;
+      border: 1px solid var(--border); border-radius: 7px;
+      background: var(--panel-bg); color: var(--text-soft);
+      font-size: 13px; cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wide-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .wide-btn title { display: none; }
+
+    /* ── 토글 스위치 ─────────────────────────────────────── */
+    .toggle-wrap { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+    .toggle-wrap input { display: none; }
+    .toggle-track {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 11px; cursor: pointer; transition: background .2s;
+    }
+    .toggle-track::after {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      background: #fff; border-radius: 50%; top: 3px; left: 3px;
+      transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    }
+    .toggle-wrap input:checked + .toggle-track { background: var(--accent); }
+    .toggle-wrap input:checked + .toggle-track::after { transform: translateX(16px); }
+
+    /* ── D-Day 에디터 ───────────────────────────────────── */
+    .dday-edit-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 0; border-bottom: 1px dashed var(--border);
+    }
+    .dday-edit-item:last-child { border-bottom: none; }
+    .dday-del-btn {
+      width: 22px; height: 22px; padding: 0; border: none;
+      background: none; color: var(--text-soft); cursor: pointer;
+      font-size: 12px; border-radius: 5px; flex-shrink: 0;
+      transition: background .1s, color .1s;
+    }
+    .dday-del-btn:hover { background: #fee2e2; color: #c33; }
+    .dday-name-input {
+      flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 8px;
+      padding: 5px 7px; font-size: 12px; color: var(--text); background: var(--panel-bg);
+    }
+    .dday-name-input:focus { outline: none; border-color: var(--accent); }
+    .dday-date-input {
+      width: 122px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px;
+      padding: 5px 6px; font-size: 11px; color: var(--text); background: var(--panel-bg);
+    }
+    .dday-date-input:focus { outline: none; border-color: var(--accent); }
+    input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.45; cursor: pointer; }
+    .add-btn {
+      width: 100%; margin-top: 8px; padding: 8px;
+      border: 1.5px dashed var(--border); border-radius: 10px;
+      background: none; color: var(--text-soft); font-size: 13px;
+      cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* 1열 모드에서 ↔ 버튼 비활성화 */
+    #widgetSortList[data-cols="1"] .wide-btn {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* ── 힌트 박스 ──────────────────────────────────────── */
+    .info-box {
+      background: var(--accent-soft); border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0; padding: 8px 12px; font-size: 12px;
+      color: var(--text-soft); margin-bottom: 10px; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-emoji">📚</span>
+      <div>
+        <h1>Smart Study AI 대시보드 설정</h1>
+        <p>테마와 위젯을 내 공부 스타일에 맞게 설정하세요</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="saveBtn"  class="btn btn-primary">💾 저장</button>
+      <button id="resetBtn" class="btn btn-ghost">↩ 초기화</button>
+    </div>
+  </header>
+
+  <nav class="page-tabs">
+    <a class="page-tab" th:href="@{/theme}">🎨 테마 설정</a>
+    <span class="page-tab active">⚙️ UI 개인화</span>
+  </nav>
+
+  <main class="layout">
+    <aside class="settings-panel" aria-label="UI 개인화 패널">
+
+      <!-- ① 위젯 설정 (표시·순서·전체너비 통합) -->
+      <section class="panel-section">
+        <h2>📦 위젯 설정</h2>
+        <div class="info-box">
+          ▲▼ 순서 변경 &nbsp;·&nbsp; ↔ 전체 너비 &nbsp;·&nbsp; 스위치로 표시/숨김
+        </div>
+        <div class="sort-list" id="widgetSortList"></div>
+      </section>
+
+      <!-- ② 레이아웃 열 수 -->
+      <section class="panel-section">
+        <h2>📐 레이아웃</h2>
+        <p class="hint">위젯을 몇 열로 배치할지 선택하세요</p>
+        <div class="segmented" id="columnSeg">
+          <button class="seg-btn" data-cols="1">1열</button>
+          <button class="seg-btn" data-cols="2">2열</button>
+        </div>
+      </section>
+
+      <!-- ③ 위젯 정렬 -->
+      <section class="panel-section">
+        <h2>↔️ 위젯 정렬</h2>
+        <div class="segmented" id="alignSeg">
+          <button class="seg-btn" data-align="left">왼쪽</button>
+          <button class="seg-btn" data-align="center">가운데</button>
+          <button class="seg-btn" data-align="right">오른쪽</button>
+        </div>
+      </section>
+
+      <!-- ④ 타이머 기본 시간 -->
+      <section class="panel-section">
+        <h2>⏱️ 타이머 기본 시간</h2>
+        <div class="segmented" id="timerSeg">
+          <button class="seg-btn" data-mins="15">15분</button>
+          <button class="seg-btn" data-mins="25">25분</button>
+          <button class="seg-btn" data-mins="45">45분</button>
+          <button class="seg-btn" data-mins="60">60분</button>
+        </div>
+      </section>
+
+      <!-- ⑤ D-Day 일정 편집 -->
+      <section class="panel-section">
+        <h2>📅 D-Day 일정</h2>
+        <p class="hint">날짜를 입력하면 D-Day를 자동 계산합니다 (최대 5개)</p>
+        <div id="ddayList"></div>
+        <button type="button" class="add-btn" id="addDdayBtn">+ 일정 추가</button>
+      </section>
+
+    </aside>
+
+    <!-- 우측 미리보기 -->
+    <section class="preview-panel" aria-label="실시간 미리보기">
+      <div class="preview-toolbar">
+        <span class="dot dot-r"></span>
+        <span class="dot dot-y"></span>
+        <span class="dot dot-g"></span>
+        <span class="preview-title">Smart Study AI · 대시보드 미리보기</span>
+      </div>
+
+      <div class="study-room" id="studyRoom">
+        <nav class="dash-nav">
+          <div class="dash-nav-left">
+            <span class="dash-logo">📚</span>
+            <span class="dash-brand">Smart Study AI</span>
+          </div>
+          <div class="dash-nav-right">
+            <span class="dash-nav-item active">대시보드</span>
+            <span class="dash-nav-item">학습 기록</span>
+            <span class="dash-nav-item">설정</span>
+          </div>
+        </nav>
+
+        <div class="widgets" id="widgets">
+          <article class="widget" data-widget-el="timer">
+            <header class="widget-header"><span>⏱️ 공부 타이머</span></header>
+            <div class="timer-display">25:00</div>
+            <div class="timer-actions">
+              <button class="btn btn-primary btn-sm">시작</button>
+              <button class="btn btn-ghost btn-sm">리셋</button>
+            </div>
+          </article>
+          <article class="widget" data-widget-el="dday">
+            <header class="widget-header"><span>📅 D-Day</span></header>
+            <ul class="dday-list"></ul>
+          </article>
+          <article class="widget" data-widget-el="heatmap">
+            <header class="widget-header"><span>🔥 학습 히트맵</span></header>
+            <div class="heatmap" id="heatmap"></div>
+          </article>
+          <article class="widget" data-widget-el="quiz">
+            <header class="widget-header"><span>📊 퀴즈 점수</span></header>
+            <svg class="quiz-chart" viewBox="0 0 200 100" preserveAspectRatio="none">
+              <g class="bars">
+                <rect x="10"  y="40" width="20" height="60"></rect>
+                <rect x="40"  y="20" width="20" height="80"></rect>
+                <rect x="70"  y="55" width="20" height="45"></rect>
+                <rect x="100" y="10" width="20" height="90"></rect>
+                <rect x="130" y="30" width="20" height="70"></rect>
+                <rect x="160" y="25" width="20" height="75"></rect>
+              </g>
+            </svg>
+          </article>
+          <article class="widget" data-widget-el="memo">
+            <header class="widget-header"><span>🗒️ 메모</span></header>
+            <p class="memo-text">
+              "오늘의 목표: 영어 단어 30개, 수학 문제 10개,<br />
+              그리고 충분한 휴식! 📝"
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script th:inline="javascript">
+  (function () {
+    'use strict';
+
+    const STORAGE_KEY = 'smartStudyAI.dashboard.v2';
+
+    const WIDGET_META = {
+      timer:   { icon: '⏱️', name: '타이머' },
+      dday:    { icon: '📅', name: 'D-Day' },
+      heatmap: { icon: '🔥', name: '히트맵' },
+      quiz:    { icon: '📊', name: '퀴즈 점수' },
+      memo:    { icon: '🗒️', name: '메모' }
+    };
+
+    const DEFAULT_STATE = {
+      theme: 'library',
+      bg: { type: 'solid', color1: '#f4ecd8', color2: '#d6c5a3', pattern: 'paper' },
+      widgets: {
+        timer:   { on: true,  order: 1, wide: false },
+        dday:    { on: true,  order: 2, wide: false },
+        heatmap: { on: true,  order: 3, wide: false },
+        quiz:    { on: false, order: 4, wide: false },
+        memo:    { on: true,  order: 5, wide: false }
+      },
+      columns: 2,
+      align: 'center',
+      details: {
+        accentColor: '#8b5a2b', cardBgColor: '#ffffff',
+        cardStyle: 'shadow', btnStyle: 'solid',
+        fontSize: 16, radius: 14, shadow: 2,
+        textHeading: '#3b2a17', textBody: '#3b2a17',
+        textSub: '#6b513a', textBtn: '#ffffff'
+      },
+      timer: { defaultMinutes: 25 },
+      ddays: [
+        { id: 1, name: '모의고사', date: '2026-06-08' },
+        { id: 2, name: '토익 시험', date: '2026-06-30' },
+        { id: 3, name: '기말고사', date: '2026-07-24' }
+      ]
+    };
+
+    function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+    function mergeDeep(t, s) {
+      for (const k in s) {
+        if (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k]))
+          t[k] = mergeDeep(t[k] || {}, s[k]);
+        else t[k] = s[k];
+      }
+      return t;
+    }
+    function normalizeOrders(group) {
+      Object.entries(group)
+        .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+        .forEach(([key], i) => { group[key].order = i + 1; });
+    }
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const s = raw ? mergeDeep(deepClone(DEFAULT_STATE), JSON.parse(raw)) : deepClone(DEFAULT_STATE);
+        normalizeOrders(s.widgets);
+        if (s.widgets.quick) delete s.widgets.quick;
+        return s;
+      } catch { return deepClone(DEFAULT_STATE); }
+    }
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch (e) { console.warn('저장 실패:', e); }
+    }
+
+    let state = loadState();
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => document.querySelectorAll(s);
+
+    function applyThemeToPreview() {
+      document.body.setAttribute('data-theme', state.theme);
+      const d = state.details;
+      document.body.style.setProperty('--accent', d.accentColor);
+      document.body.style.setProperty('--accent-soft', mixWithWhite(d.accentColor, 0.85));
+      document.body.style.setProperty('--card-bg', d.cardBgColor);
+      document.body.style.setProperty('--card-radius', d.radius + 'px');
+      document.body.style.setProperty('--card-shadow', shadowToken(d.shadow));
+      document.body.setAttribute('data-card-style', d.cardStyle);
+      document.body.setAttribute('data-btn-style', d.btnStyle);
+      const room = $('#studyRoom');
+      room.setAttribute('data-bg-mode', state.bg.type);
+      room.style.setProperty('--room-bg', state.bg.color1);
+      room.style.setProperty('--room-bg2', state.bg.color2);
+      room.style.setProperty('--preview-font-size', d.fontSize + 'px');
+      room.style.setProperty('--preview-text-heading', d.textHeading);
+      room.style.setProperty('--preview-text-body', d.textBody);
+      room.style.setProperty('--preview-text-sub', d.textSub);
+      room.style.setProperty('--preview-text-btn', d.textBtn);
+    }
+    function shadowToken(lv) {
+      return ({0:'none',1:'0 2px 6px rgba(80,60,30,0.06)',2:'0 6px 18px rgba(80,60,30,0.08)',
+        3:'0 10px 24px rgba(80,60,30,0.14)',4:'0 14px 30px rgba(80,60,30,0.18)',
+        5:'0 18px 40px rgba(80,60,30,0.24)'})[lv] ?? '0 6px 18px rgba(80,60,30,0.08)';
+    }
+    function mixWithWhite(hex, ratio) {
+      const c = hex.replace('#','');
+      const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
+      const m = ch => Math.round(ch+(255-ch)*ratio), h = n => n.toString(16).padStart(2,'0');
+      return '#'+h(m(r))+h(m(g))+h(m(b));
+    }
+
+    function applyWidgetsPreview() {
+      const cols = state.columns || 2;
+      const container = $('#widgets');
+      const sorted = Object.entries(state.widgets)
+        .sort((a, b) => a[1].order - b[1].order);
+
+      sorted.forEach(([key, w]) => {
+        const el = container.querySelector(`.widget[data-widget-el="${key}"]`);
+        if (!el) return;
+        el.classList.toggle('hidden', !w.on);
+        el.style.order = '';
+        el.style.gridRow = '';
+        el.style.gridColumn = (w.wide && cols >= 2) ? '1 / span 2' : '';
+        container.appendChild(el);
+      });
+
+      container.setAttribute('data-align', state.align);
+      container.setAttribute('data-columns', String(cols));
+      $('#widgetSortList').dataset.cols = String(cols);
+    }
+
+    function applyTimerPreview() {
+      const el = document.querySelector('#studyRoom .timer-display');
+      if (!el) return;
+      const mins = state.timer?.defaultMinutes ?? 25;
+      el.textContent = String(mins).padStart(2, '0') + ':00';
+    }
+
+    function applyDdayPreview() {
+      const list = document.querySelector('#studyRoom .dday-list');
+      if (!list) return;
+      if (!state.ddays?.length) {
+        list.innerHTML = '<li style="color:var(--text-soft);font-size:12px;padding:6px 0">일정이 없습니다</li>';
+        return;
+      }
+      const today = new Date(); today.setHours(0,0,0,0);
+      list.innerHTML = state.ddays.map(d => {
+        let label = '날짜 미설정';
+        if (d.date) {
+          const diff = Math.ceil((new Date(d.date) - today) / 86400000);
+          label = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${Math.abs(diff)}`;
+        }
+        return `<li><span>${d.name || '(이름 없음)'}</span><b>${label}</b></li>`;
+      }).join('');
+    }
+
+    function renderHeatmap() {
+      const hm = $('#heatmap');
+      if (!hm) return;
+      hm.innerHTML = '';
+      for (let i = 0; i < 70; i++) {
+        const cell = document.createElement('span');
+        const r = Math.random();
+        if      (r > 0.85) cell.className = 'lv4';
+        else if (r > 0.65) cell.className = 'lv3';
+        else if (r > 0.4)  cell.className = 'lv2';
+        else if (r > 0.2)  cell.className = 'lv1';
+        hm.appendChild(cell);
+      }
+    }
+
+    function getSortedWidgets() {
+      return Object.entries(state.widgets).sort((a,b) => a[1].order - b[1].order);
+    }
+
+    function renderWidgetSortList() {
+      const list = $('#widgetSortList');
+      const sorted = getSortedWidgets();
+      const total = sorted.length;
+      list.innerHTML = '';
+
+      sorted.forEach(([key, w], idx) => {
+        const meta = WIDGET_META[key];
+        const item = document.createElement('div');
+        item.className = 'sort-item' + (w.on ? '' : ' disabled');
+        item.dataset.key = key;
+
+        const upBtn = document.createElement('button');
+        upBtn.type = 'button'; upBtn.className = 'sort-btn';
+        upBtn.dataset.dir = 'up'; upBtn.title = '위로'; upBtn.textContent = '▲';
+        if (idx === 0) upBtn.disabled = true;
+
+        const downBtn = document.createElement('button');
+        downBtn.type = 'button'; downBtn.className = 'sort-btn';
+        downBtn.dataset.dir = 'down'; downBtn.title = '아래로'; downBtn.textContent = '▼';
+        if (idx === total - 1) downBtn.disabled = true;
+
+        const arrows = document.createElement('div');
+        arrows.className = 'sort-arrows';
+        arrows.appendChild(upBtn); arrows.appendChild(downBtn);
+
+        const icon = document.createElement('span');
+        icon.className = 'sort-icon'; icon.textContent = meta.icon;
+
+        const name = document.createElement('span');
+        name.className = 'sort-name'; name.textContent = meta.name;
+
+        const wideBtn = document.createElement('button');
+        wideBtn.type = 'button';
+        wideBtn.className = 'wide-btn' + (w.wide ? ' active' : '');
+        wideBtn.textContent = '↔';
+        wideBtn.title = '전체 너비';
+        wideBtn.dataset.role = 'wide-toggle';
+
+        const toggleLabel = document.createElement('label');
+        toggleLabel.className = 'toggle-wrap';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox'; checkbox.checked = w.on;
+        checkbox.dataset.role = 'widget-toggle';
+        const track = document.createElement('span');
+        track.className = 'toggle-track';
+        toggleLabel.appendChild(checkbox); toggleLabel.appendChild(track);
+
+        item.appendChild(arrows); item.appendChild(icon); item.appendChild(name);
+        item.appendChild(wideBtn); item.appendChild(toggleLabel);
+        list.appendChild(item);
+      });
+    }
+
+    function moveWidget(key, dir) {
+      const sorted = getSortedWidgets();
+      const idx = sorted.findIndex(([k]) => k === key);
+      const ti = dir === 'up' ? idx - 1 : idx + 1;
+      if (ti < 0 || ti >= sorted.length) return;
+      const aKey = sorted[idx][0], bKey = sorted[ti][0];
+      [state.widgets[aKey].order, state.widgets[bKey].order] =
+        [state.widgets[bKey].order, state.widgets[aKey].order];
+      renderWidgetSortList();
+      applyWidgetsPreview();
+      saveState();
+    }
+
+    $('#widgetSortList').addEventListener('click', (e) => {
+      const sortBtn = e.target.closest('.sort-btn');
+      if (sortBtn && !sortBtn.disabled) {
+        const item = sortBtn.closest('.sort-item');
+        if (item) moveWidget(item.dataset.key, sortBtn.dataset.dir);
+        return;
+      }
+      const wideBtn = e.target.closest('[data-role="wide-toggle"]');
+      if (wideBtn) {
+        const item = wideBtn.closest('.sort-item');
+        const key = item.dataset.key;
+        state.widgets[key].wide = !state.widgets[key].wide;
+        wideBtn.classList.toggle('active', state.widgets[key].wide);
+        applyWidgetsPreview();
+        saveState();
+      }
+    });
+    $('#widgetSortList').addEventListener('change', (e) => {
+      if (e.target.dataset.role !== 'widget-toggle') return;
+      const item = e.target.closest('.sort-item');
+      const key = item.dataset.key;
+      state.widgets[key].on = e.target.checked;
+      item.classList.toggle('disabled', !e.target.checked);
+      applyWidgetsPreview();
+      saveState();
+    });
+
+    function updateColumnSeg() {
+      $$('#columnSeg .seg-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.cols) === (state.columns || 2));
+      });
+    }
+    $('#columnSeg').addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      state.columns = Number(btn.dataset.cols);
+      updateColumnSeg();
+      applyWidgetsPreview();
+      saveState();
+    });
+
+    function updateAlignSeg() {
+      $$('#alignSeg .seg-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.align === state.align);
+      });
+    }
+    $('#alignSeg').addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      state.align = btn.dataset.align;
+      updateAlignSeg();
+      applyWidgetsPreview();
+      saveState();
+    });
+
+    function updateTimerSeg() {
+      const cur = state.timer?.defaultMinutes ?? 25;
+      $$('#timerSeg .seg-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.mins) === cur);
+      });
+    }
+    $('#timerSeg').addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      if (!state.timer) state.timer = {};
+      state.timer.defaultMinutes = Number(btn.dataset.mins);
+      updateTimerSeg();
+      applyTimerPreview();
+      saveState();
+    });
+
+    function renderDdayList() {
+      const container = $('#ddayList');
+      container.innerHTML = '';
+      (state.ddays || []).forEach(d => {
+        const item = document.createElement('div');
+        item.className = 'dday-edit-item';
+        item.dataset.id = d.id;
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button'; delBtn.className = 'dday-del-btn';
+        delBtn.textContent = '✕'; delBtn.title = '삭제';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text'; nameInput.className = 'dday-name-input';
+        nameInput.value = d.name; nameInput.maxLength = 10;
+        nameInput.placeholder = '일정 이름';
+
+        const dateInput = document.createElement('input');
+        dateInput.type = 'date'; dateInput.className = 'dday-date-input';
+        dateInput.value = d.date;
+
+        item.appendChild(delBtn); item.appendChild(nameInput); item.appendChild(dateInput);
+        container.appendChild(item);
+      });
+    }
+
+    $('#ddayList').addEventListener('click', (e) => {
+      const btn = e.target.closest('.dday-del-btn');
+      if (!btn) return;
+      const id = Number(btn.closest('.dday-edit-item').dataset.id);
+      state.ddays = state.ddays.filter(d => d.id !== id);
+      renderDdayList();
+      applyDdayPreview();
+      saveState();
+    });
+    $('#ddayList').addEventListener('input', (e) => {
+      const item = e.target.closest('.dday-edit-item');
+      if (!item) return;
+      const d = state.ddays.find(d => d.id === Number(item.dataset.id));
+      if (!d) return;
+      if (e.target.classList.contains('dday-name-input')) d.name = e.target.value;
+      if (e.target.classList.contains('dday-date-input')) d.date = e.target.value;
+      applyDdayPreview();
+      saveState();
+    });
+    $('#addDdayBtn').addEventListener('click', () => {
+      if ((state.ddays || []).length >= 5) return;
+      if (!state.ddays) state.ddays = [];
+      state.ddays.push({ id: Date.now(), name: '새 일정', date: '' });
+      renderDdayList();
+      applyDdayPreview();
+      saveState();
+    });
+
+    $('#saveBtn').addEventListener('click', () => {
+      saveState();
+      const btn = $('#saveBtn');
+      btn.textContent = '✅ 저장됨';
+      setTimeout(() => { btn.textContent = '💾 저장'; }, 1200);
+    });
+    $('#resetBtn').addEventListener('click', () => {
+      if (!confirm('모든 설정을 기본값으로 되돌릴까요?')) return;
+      state = deepClone(DEFAULT_STATE);
+      saveState();
+      boot();
+    });
+
+    function boot() {
+      renderHeatmap();
+      renderWidgetSortList();
+      updateColumnSeg();
+      updateAlignSeg();
+      updateTimerSeg();
+      renderDdayList();
+      applyThemeToPreview();
+      applyWidgetsPreview();
+      applyTimerPreview();
+      applyDdayPreview();
+    }
+
+    boot();
+  })();
+  </script>
+</body>
+</html>
