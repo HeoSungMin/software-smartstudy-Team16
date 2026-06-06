@@ -1,8 +1,0 @@
-com/example/studyapp2/dto/SubjectStat.class
-com/example/studyapp2/StudyApp2Application.class
-com/example/studyapp2/dto/RecommendationItem.class
-com/example/studyapp2/service/RecommendationService.class
-com/example/studyapp2/entity/User.class
-com/example/studyapp2/controller/RecommendationController.class
-com/example/studyapp2/service/UserService.class
-com/example/studyapp2/dto/QuizRecord.class
