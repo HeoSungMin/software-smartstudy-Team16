@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head><meta charset="UTF-8"><title>대시보드 - StudyApp</title>
+<link rel="stylesheet" th:href="@{/css/main.css}">
+<style>
+
+.tt-slot { height: 20px; border-bottom: 1px solid #f0f0f0; }
+
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.stat-label{font-size:12px;color:var(--text-sub);font-weight:500}
+.stat-value{font-size:24px;font-weight:700;letter-spacing:-1px}
+.tt-full{display:grid;grid-template-columns:52px repeat(5,1fr);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:600px}
+</style></head>
+<body><div class="app-layout">
+  <div th:replace="~{fragments/sidebar :: sidebar('dashboard')}"></div>
+  <main class="main-content">
+    <div class="page-header">
+      <div class="page-title" th:text="'안녕하세요, ' + ${user.name} + '님 👋'"></div>
+      <div class="page-subtitle" id="today-date"></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">이번 주 수업</div><div class="stat-value" th:text="${schedules.size()}">0</div></div>
+      <div class="stat-card"><div class="stat-label">다가오는 일정</div><div class="stat-value" th:text="${eventsWithDday.size()}">0</div></div>
+      <div class="stat-card"><div class="stat-label">가장 빠른 마감</div>
+      <div class="stat-value" th:if="${eventsWithDday.size()>0}" th:text="${eventsWithDday[0].dday>=0?'D-'+eventsWithDday[0].dday:'지남'}" style="font-size:18px"></div>
+      <div class="stat-value" th:unless="${eventsWithDday.size()>0}" style="font-size:18px">없음</div>
+    </div>
+  <div class="card mb-4" style="margin-bottom: 20px;">
+        <div class="card-header" style="padding: 16px; border-bottom: 1px solid var(--border);">
+            <h5 style="margin: 0; font-size: 16px;">📚 오늘의 복습</h5>
+        </div>
+        <div class="card-body" style="padding: 16px;">
+            <div th:if="${#lists.isEmpty(todaysReviews)}" class="text-muted" style="color: var(--text-sub); font-size: 14px; text-align: center; padding: 20px 0;">
+                오늘 예정된 복습이 없습니다. 푹 쉬시거나 개인 진도를 나가세요!
+            </div>
+            <div th:unless="${#lists.isEmpty(todaysReviews)}">
+                <div th:each="review : ${todaysReviews}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border);">
+                    <strong th:text="${review.subjectName}" style="font-size: 14px; color: var(--text-main);">과목명</strong>
+                    <span th:text="${review.stage} + '단계 복습'" style="font-size: 12px; padding: 4px 8px; background-color: #10b981; color: white; border-radius: 12px; font-weight: bold;">1단계 복습</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+    <div class="grid-2" style="align-items:start;gap:20px">
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">주간 시간표<a th:href="@{/schedule}" class="btn btn-secondary btn-sm">편집</a></div>
+        <div style="overflow-x:auto"><div class="tt-full" id="timetable">
+          <div class="tt-head"></div><div class="tt-head">월</div><div class="tt-head">화</div><div class="tt-head">수</div><div class="tt-head">목</div><div class="tt-head">금</div>
+        </div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">D-Day 일정<a th:href="@{/events}" class="btn btn-secondary btn-sm">+ 추가</a></div>
+        <div th:if="${eventsWithDday.empty}" style="text-align:center;padding:30px;color:var(--text-sub);font-size:13px">등록된 일정이 없습니다</div>
+        <div th:each="item:${eventsWithDday}">
+          <div class="dday-card">
+            <div>
+              <div style="font-weight:600;font-size:14px" th:text="${item.event.title}"></div>
+              <div style="font-size:12px;color:var(--text-sub)" th:text="${item.event.subjectName+' · '+item.event.dueDate}"></div>
+              <span class="badge" th:classappend="${item.event.type=='EXAM'}?'badge-red':(${item.event.type=='ASSIGNMENT'}?'badge-blue':'badge-green')"
+                    th:text="${item.event.type=='EXAM'}?'시험':(${item.event.type=='ASSIGNMENT'}?'과제':'기타')"></span>
+            </div>
+            <div class="dday-badge" th:classappend="${item.dday<=3}?'dday-urgent':(${item.dday<=7}?'dday-soon':'dday-normal')"
+                 th:text="${item.dday==0}?'D-Day':('D-'+item.dday)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script th:inline="javascript">
+const schedules=/*[[${schedules}]]*/[];
+const days=['일','월','화','수','목','금','토'],now=new Date();
+document.getElementById('today-date').textContent=`${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
+const S=8,E=22,CH=40,grid=document.getElementById('timetable');
+
+
+for(let h=S; h<=E; h++){
+  for(let m of [0, 30]) {
+    const tl = document.createElement('div');
+    tl.className = 'tt-time-label';
+    if(m === 0) tl.textContent = `${h}:00`;
+    grid.appendChild(tl);
+    for(let d=1; d<=5; d++){
+      const sl = document.createElement('div');
+      sl.className = 'tt-slot';
+      sl.dataset.h = h; sl.dataset.m = m; sl.dataset.d = d;
+      grid.appendChild(sl);
+    }
+  }
+}
+
+ schedules.forEach(s => {
+  const top = (s.startHour - S) * CH + (s.startMinute / 60) * CH;
+  const ht = ((s.endHour * 60 + s.endMinute) - (s.startHour * 60 + s.startMinute)) / 60 * CH;
+  const ref = grid.querySelector(`.tt-slot[data-d="${s.dayOfWeek}"][data-h="${s.startHour}"][data-m="${s.startMinute < 30 ? 0 : 30}"]`);
+  if(!ref) return;
+  const b = document.createElement('div');
+  b.className = 'tt-block';
+  b.style.cssText = `background:${s.color||'#2563eb'}; top:${top}px; height:${ht-2}px; position:absolute; width: 100%;`;
+  b.innerHTML = `<div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px;">${s.subjectName}</div>`;
+  ref.style.position = 'relative';
+  ref.appendChild(b);
+});
+</script>
+</body></html>
