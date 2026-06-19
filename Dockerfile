@@ -17,5 +17,5 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 # 🌟 [여기서부터 수정] 포트 통로를 8081로 전격 교체합니다!
-EXPOSE 8081
+EXPOSE 8080
 CMD ["java", "-jar", "app.jar"]
