@@ -313,14 +313,9 @@ async function init() {
         calcStats(heatmapData);
         renderHeatmap(heatmapData);
         if (summary) {
+            // streakDays만 activity-summary에서 가져옴
+            // todayMinutes는 heatmap 데이터(SESSION 필터)에서 직접 계산
             document.getElementById('streakDays').textContent = summary.streakDays + '일';
-            // 오늘 분은 activity-summary에서도 가져옴
-            if (summary.todayMinutes !== undefined) {
-                document.getElementById('todayMin').textContent = summary.todayMinutes;
-                const pct = Math.min(Math.round(summary.todayMinutes / GOAL * 100), 100);
-                document.getElementById('todayProgress').style.width = pct + '%';
-                document.getElementById('todayGoalText').textContent = summary.todayMinutes + ' / ' + GOAL + '분';
-            }
         }
         renderDistribution();
     } catch(e) {
