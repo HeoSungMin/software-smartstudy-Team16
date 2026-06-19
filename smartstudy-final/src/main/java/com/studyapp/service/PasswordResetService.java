@@ -4,6 +4,7 @@ import com.studyapp.model.User;
 import com.studyapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -19,8 +20,10 @@ import java.util.UUID;
 public class PasswordResetService {
 
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender;
     private final PasswordEncoder passwordEncoder;
+
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
 
     @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
@@ -47,6 +50,10 @@ public class PasswordResetService {
     }
 
     private void sendMail(String to, String name, String resetLink) {
+        if (mailSender == null) {
+            log.warn("메일 서버가 설정되지 않아 메일을 발송할 수 없습니다. 링크: {}", resetLink);
+            return;
+        }
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom(fromEmail);
