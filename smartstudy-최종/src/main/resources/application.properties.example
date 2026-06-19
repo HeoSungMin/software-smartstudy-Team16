@@ -1,0 +1,16 @@
+server.port=8081
+spring.data.mongodb.uri=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?appName=<appName>
+groq.api.key=your_groq_api_key_here
+groq.api.model=llama-3.3-70b-versatile
+
+jwt.secret=your_jwt_secret_key_here
+
+
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_app_password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.thymeleaf.cache=false
+spring.jackson.serialization.write-dates-as-timestamps=false

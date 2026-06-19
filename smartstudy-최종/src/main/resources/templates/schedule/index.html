@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>시간표 - StudyApp</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+<div class="app-layout">
+  <div th:replace="~{fragments/sidebar :: sidebar('schedule')}"></div>
+  <main class="main-content">
+
+    <!-- 헤더 -->
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="page-title">시간표</div>
+        <div class="page-subtitle">셀 클릭으로 바로 추가 · 강의 검색으로 일괄 등록</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <!-- ★ 강의 검색 버튼 -->
+        <button class="btn btn-primary" onclick="openSearchModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          강의 검색
+        </button>
+        <button class="btn btn-secondary" onclick="openAddModal()">+ 직접 추가</button>
+      </div>
+    </div>
+
+    <!-- 시간표 그리드 -->
+    <div class="card">
+      <div style="overflow-x:auto">
+        <div class="tt-full" id="timetable">
+          <div class="tt-head"></div>
+          <div class="tt-head">월</div>
+          <div class="tt-head">화</div>
+          <div class="tt-head">수</div>
+          <div class="tt-head">목</div>
+          <div class="tt-head">금</div>
+        </div>
+      </div>
+      <div class="hint-bar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        빈 칸을 클릭하면 해당 시간에 바로 수업을 추가할 수 있어요
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ════════════════════════════════════════════
+     모달 1: 직접 추가
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">수업 추가</div>
+      <button class="modal-close" onclick="closeModal('addModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">과목명 <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="subjectName" class="form-input" placeholder="예: 자료구조">
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">교수명</label>
+        <input type="text" id="professor" class="form-input" placeholder="교수명">
+      </div>
+      <div class="form-group">
+        <label class="form-label">강의실</label>
+        <input type="text" id="room" class="form-input" placeholder="예: 공학관 301호">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">요일 <span style="color:var(--danger)">*</span></label>
+      <select id="dayOfWeek" class="form-input">
+        <option value="1">월요일</option><option value="2">화요일</option>
+        <option value="3">수요일</option><option value="4">목요일</option><option value="5">금요일</option>
+      </select>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">시작 시간</label>
+        <input type="time" id="startTime" class="form-input" value="09:00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">종료 시간</label>
+        <input type="time" id="endTime" class="form-input" value="10:30">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">색상</label>
+      <div class="color-picker" id="colorPicker">
+        <div class="color-dot selected" style="background:#2563eb" data-color="#2563eb" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#7c3aed" data-color="#7c3aed" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#db2777" data-color="#db2777" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#dc2626" data-color="#dc2626" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#d97706" data-color="#d97706" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#16a34a" data-color="#16a34a" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#0891b2" data-color="#0891b2" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#475569" data-color="#475569" onclick="selectColor(this)"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-secondary" onclick="closeModal('addModal')">취소</button>
+      <button class="btn btn-primary" onclick="addSchedule()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     모달 2: 과목 메모
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="memoModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="memoTitle">과목 상세</div>
+      <button class="modal-close" onclick="closeModal('memoModal')">×</button>
+    </div>
+    <div id="memoInfo" style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text-sub)"></div>
+    <div class="form-group">
+      <label class="form-label">📝 메모</label>
+      <textarea id="memoContent" class="form-input" rows="5" placeholder="수업 관련 메모..." style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:8px">
+      <button class="btn btn-danger btn-sm" onclick="deleteSchedule()">삭제</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal('memoModal')">닫기</button>
+        <button class="btn btn-primary" onclick="saveMemo()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     모달 3: 강의 검색 (★ 핵심)
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="searchModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">🏫 강의 검색</div>
+      <button class="modal-close" onclick="closeModal('searchModal')">×</button>
+    </div>
+
+    <!-- 검색 입력 -->
+    <div class="course-search-bar">
+      <input type="text" id="univInput" class="form-input" placeholder="대학교명 (예: 경상국립대학교)" style="flex:1.2">
+      <input type="text" id="deptInput" class="form-input" placeholder="학과명 (예: 컴퓨터공학과)" style="flex:1">
+      <button class="btn btn-primary" id="searchBtn" onclick="searchCourses()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        검색
+      </button>
+    </div>
+
+    <!-- 선택 현황 바 (선택 시 표시) -->
+    <div class="select-bar" id="selectBar" style="display:none">
+      <span class="select-bar-text" id="selectBarText">0개 선택됨</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="clearSelection()">선택 해제</button>
+        <button class="btn btn-success btn-sm" onclick="bulkRegister()">
+          ✅ 선택한 강의 시간표에 추가
+        </button>
+      </div>
+    </div>
+
+    <!-- 결과 영역 -->
+    <div class="course-list" id="courseResults">
+      <div class="empty-state">
+        <div class="icon">🏫</div>
+        <div>대학교명과 학과명을 입력하고 검색하면<br>수강 가능한 강의 목록이 나타납니다</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     JavaScript
+════════════════════════════════════════════ -->
+<script th:inline="javascript">
+const schedules = /*[[${schedules}]]*/ [];
+const START_HOUR = 8, END_HOUR = 22, CELL_H = 48;
+
+let selectedColor = '#2563eb';
+let currentScheduleId = null;
+let allCourses = [];          // 검색 결과 전체
+let selectedCourses = [];     // 선택된 CourseInfo 목록
+
+// ─────────────────────────────
+// 시간표 렌더링
+// ─────────────────────────────
+function renderTimetable() {
+    const grid = document.getElementById('timetable');
+    // 기존 내용 삭제
+    grid.innerHTML = '<div class="tt-head"></div><div class="tt-head">월</div><div class="tt-head">화</div><div class="tt-head">수</div><div class="tt-head">목</div><div class="tt-head">금</div>';
+    
+    // 시간대별 컨테이너 생성
+    for (let h = START_HOUR; h <= END_HOUR; h++) {
+        // 시간 라벨
+        const tl = document.createElement('div');
+        tl.className = 'tt-time-label';
+        tl.style.height = '48px'; // 30분*2 셀 높이 합계
+        tl.textContent = `${String(h).padStart(2, '0')}:00`;
+        grid.appendChild(tl);
+
+        // 요일별 슬롯 (30분 단위로 h, m 쪼개기)
+        for (let d = 1; d <= 5; d++) {
+            const col = document.createElement('div');
+            col.className = 'tt-day-col';
+            col.style.position = 'relative';
+            col.dataset.d = d; // ★ 핵심 원인 해결: 요일 이름표(data-d) 달아주기
+            
+            // 0분, 30분 슬롯 생성
+            [0, 30].forEach(m => {
+                const slot = document.createElement('div');
+                slot.className = 'tt-slot';
+                slot.style.height = '24px';
+                slot.dataset.h = h;
+                slot.dataset.m = m;
+                slot.dataset.d = d;
+                slot.addEventListener('click', () => openAddModalAt(d, h, m));
+                col.appendChild(slot);
+            });
+            grid.appendChild(col);
+        }
+    }
+    schedules.forEach(renderBlock);
+}
+
+function renderBlock(s) {
+    const grid = document.getElementById('timetable');
+    
+    // 요일(data-d)로 정확한 컨테이너 찾기
+    const container = grid.querySelector(`.tt-day-col[data-d="${s.dayOfWeek}"]`);
+    if (!container) return; // 컨테이너를 못 찾으면 안 그려짐 (이제 무조건 찾음)
+
+    const block = document.createElement('div');
+    block.className = 'tt-block';
+    
+    // 30분 단위 그리드에 맞춘 완벽한 위치 계산 (시간당 48px, 30분당 24px)
+    const topOffset = (s.startHour - START_HOUR) * 48 + (s.startMinute / 30) * 24;
+    const duration = ((s.endHour * 60 + s.endMinute) - (s.startHour * 60 + s.startMinute)) / 30 * 24;
+    
+    block.style.cssText = `
+        background:${s.color || '#2563eb'};
+        top:${topOffset}px;
+        height:${duration - 2}px;
+        position:absolute;
+        left:4px;
+        right:4px;
+        z-index:10;
+    `;
+    
+    // 블록 내부 글씨 안 깨지게 처리
+    block.innerHTML = `
+        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.subjectName}</div>
+        <div style="font-size:10px; opacity:0.8;">${s.room || ''}</div>
+    `;
+    block.onclick = e => { e.stopPropagation(); openMemoModal(s); };
+    
+    container.appendChild(block);
+}
+
+// ─────────────────────────────
+// 모달 유틸
+// ─────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+
+function selectColor(el) {
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = el.dataset.color;
+}
+
+// ─────────────────────────────
+// 직접 추가 모달
+// ─────────────────────────────
+function openAddModal() {
+  resetAddForm();
+  openModal('addModal');
+}
+
+function openAddModalAt(day, hour) {
+  resetAddForm();
+  document.getElementById('dayOfWeek').value = String(day);
+  document.getElementById('startTime').value = `${String(hour).padStart(2,'0')}:00`;
+  document.getElementById('endTime').value   = `${String(Math.min(hour+1,23)).padStart(2,'0')}:30`;
+  openModal('addModal');
+  setTimeout(() => document.getElementById('subjectName').focus(), 80);
+}
+
+function resetAddForm() {
+  ['subjectName','professor','room'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('dayOfWeek').value = '1';
+  document.getElementById('startTime').value = '09:00';
+  document.getElementById('endTime').value   = '10:30';
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  document.querySelector('.color-dot').classList.add('selected');
+  selectedColor = '#2563eb';
+}
+
+async function addSchedule() {
+  const name = document.getElementById('subjectName').value.trim();
+  if (!name) { alert('과목명을 입력하세요.'); return; }
+  const [sh,sm] = document.getElementById('startTime').value.split(':').map(Number);
+  const [eh,em] = document.getElementById('endTime').value.split(':').map(Number);
+  if (eh*60+em <= sh*60+sm) { alert('종료 시간이 시작 시간보다 늦어야 합니다.'); return; }
+
+  const body = {
+    subjectName: name,
+    professor: document.getElementById('professor').value,
+    room: document.getElementById('room').value,
+    dayOfWeek: parseInt(document.getElementById('dayOfWeek').value),
+    startHour:sh, startMinute:sm, endHour:eh, endMinute:em,
+    color: selectedColor
+  };
+  const res = await fetch('/schedule/add', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  });
+  if (res.ok) {
+    schedules.push(await res.json());
+    renderTimetable();
+    closeModal('addModal');
+  } else alert('추가 실패. 다시 시도해주세요.');
+}
+
+// ─────────────────────────────
+// 메모 모달
+// ─────────────────────────────
+function openMemoModal(s) {
+  currentScheduleId = s.id;
+  document.getElementById('memoTitle').textContent = s.subjectName;
+  document.getElementById('memoInfo').innerHTML =
+    `<strong>요일:</strong> ${['','월','화','수','목','금'][s.dayOfWeek]} &nbsp;|&nbsp;
+     <strong>시간:</strong> ${String(s.startHour).padStart(2,'0')}:${String(s.startMinute).padStart(2,'0')} ~ ${String(s.endHour).padStart(2,'0')}:${String(s.endMinute).padStart(2,'0')}<br>
+     <strong>교수:</strong> ${s.professor||'-'} &nbsp;|&nbsp; <strong>강의실:</strong> ${s.room||'-'}`;
+  document.getElementById('memoContent').value = s.memo || '';
+  openModal('memoModal');
+}
+
+async function saveMemo() {
+  const memo = document.getElementById('memoContent').value;
+  const res = await fetch(`/schedule/${currentScheduleId}/memo`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({memo})
+  });
+  if (res.ok) {
+    const idx = schedules.findIndex(s => s.id === currentScheduleId);
+    if (idx > -1) schedules[idx].memo = memo;
+    closeModal('memoModal');
+  } else alert('저장 실패.');
+}
+
+async function deleteSchedule() {
+  if (!confirm('이 수업을 삭제하시겠습니까?')) return;
+  const res = await fetch(`/schedule/${currentScheduleId}`, { method:'DELETE' });
+  if (res.ok) {
+    const idx = schedules.findIndex(s => s.id === currentScheduleId);
+    if (idx > -1) schedules.splice(idx, 1);
+    renderTimetable();
+    closeModal('memoModal');
+  }
+}
+
+// ─────────────────────────────
+// ★ 강의 검색
+// ─────────────────────────────
+function openSearchModal() {
+  openModal('searchModal');
+  document.getElementById('univInput').focus();
+}
+
+async function searchCourses() {
+  const university = document.getElementById('univInput').value.trim();
+  const department = document.getElementById('deptInput').value.trim();
+  if (!university || !department) {
+    alert('대학교명과 학과명을 모두 입력해주세요.');
+    return;
+  }
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  document.getElementById('courseResults').innerHTML = `
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div>${university} ${department} 강의 목록을 불러오는 중...</div>
+    </div>`;
+
+  try {
+    const res = await fetch('/api/courses/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ university, department })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || '서버 오류');
+    }
+
+    allCourses = await res.json();
+    selectedCourses = [];
+    renderCourseList(allCourses);
+    updateSelectBar();
+
+  } catch (e) {
+    document.getElementById('courseResults').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <div style="color:var(--danger)">${e.message}</div>
+        <div style="margin-top:8px;font-size:12px">Gemini API 키를 확인하고 다시 시도해주세요.</div>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 검색`;
+  }
+}
+
+// 카테고리별로 분류해서 렌더링
+function renderCourseList(courses) {
+  const resultsEl = document.getElementById('courseResults');
+  if (!courses.length) {
+    resultsEl.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>검색 결과가 없습니다.</div></div>';
+    return;
+  }
+
+  const cats = { '전공필수': [], '전공선택': [], '교양': [] };
+  courses.forEach(c => (cats[c.category] || cats['전공선택']).push(c));
+
+  const catStyle = {
+    '전공필수': { badge: 'badge-red',    emoji: '🔴' },
+    '전공선택': { badge: 'badge-blue',   emoji: '🔵' },
+    '교양':     { badge: 'badge-green',  emoji: '🟢' },
+  };
+
+  const days = ['','월','화','수','목','금'];
+
+  resultsEl.innerHTML = Object.entries(cats)
+    .filter(([,list]) => list.length > 0)
+    .map(([cat, list]) => `
+      <div class="cat-section">
+        <div class="cat-title">
+          ${catStyle[cat].emoji} ${cat}
+          <span class="badge ${catStyle[cat].badge}">${list.length}개</span>
+        </div>
+        ${list.map(c => {
+          const isSelected = selectedCourses.some(s => s.id === c.id);
+          const timeStr = `${days[c.dayOfWeek]}요일 ${String(c.startHour).padStart(2,'0')}:${String(c.startMinute).padStart(2,'0')} ~ ${String(c.endHour).padStart(2,'0')}:${String(c.endMinute).padStart(2,'0')}`;
+          return `
+            <div class="course-card ${isSelected ? 'selected' : ''}" id="card-${c.id}" onclick="toggleCourse('${c.id}')">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation();toggleCourse('${c.id}')">
+              <div class="course-card-body">
+                <div class="course-name">
+                  <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.color};margin-right:6px;vertical-align:middle"></span>
+                  ${c.subjectName}
+                  <span style="font-size:11px;font-weight:400;color:var(--text-sub);margin-left:4px">${c.credit}학점</span>
+                </div>
+                <div class="course-meta">
+                  <span>👨‍🏫 ${c.professor}</span>
+                  <span>🕐 ${timeStr}</span>
+                  <span>📍 ${c.room}</span>
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    `).join('');
+}
+
+function toggleCourse(id) {
+  const course = allCourses.find(c => c.id === id);
+  if (!course) return;
+
+  const idx = selectedCourses.findIndex(s => s.id === id);
+  if (idx > -1) {
+    selectedCourses.splice(idx, 1);
+  } else {
+    selectedCourses.push(course);
+  }
+
+  // 카드 UI 업데이트
+  const card = document.getElementById(`card-${id}`);
+  if (card) {
+    card.classList.toggle('selected', idx === -1);
+    const cb = card.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = (idx === -1);
+  }
+  updateSelectBar();
+}
+
+function clearSelection() {
+  selectedCourses = [];
+  document.querySelectorAll('.course-card.selected').forEach(el => {
+    el.classList.remove('selected');
+    const cb = el.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = false;
+  });
+  updateSelectBar();
+}
+
+function updateSelectBar() {
+  const bar = document.getElementById('selectBar');
+  const text = document.getElementById('selectBarText');
+  if (selectedCourses.length > 0) {
+    bar.style.display = 'flex';
+    text.textContent = `${selectedCourses.length}개 선택됨`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+// ★ 선택한 강의 일괄 등록
+async function bulkRegister() {
+  if (!selectedCourses.length) { alert('강의를 먼저 선택해주세요.'); return; }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '등록 중...';
+
+  try {
+    const res = await fetch('/schedule/bulk-add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(selectedCourses)
+    });
+
+    if (!res.ok) throw new Error('등록 실패');
+
+    const result = await res.json();
+    result.schedules.forEach(s => schedules.push(s));
+    renderTimetable();
+    closeModal('searchModal');
+    clearSelection();
+    alert(`✅ ${result.message}`);
+
+  } catch (e) {
+    alert('등록 중 오류가 발생했습니다: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ 선택한 강의 시간표에 추가';
+  }
+}
+
+// Enter 키로 검색
+document.addEventListener('DOMContentLoaded', () => {
+  ['univInput','deptInput'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') searchCourses();
+    });
+  });
+});
+
+// 초기 렌더링
+renderTimetable();
+</script>
+</body>
+</html>
