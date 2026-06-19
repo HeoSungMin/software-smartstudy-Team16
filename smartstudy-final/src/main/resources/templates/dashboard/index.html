@@ -412,10 +412,8 @@ function startTimer() {
 
 function stopTimer() {
     const startTime = parseInt(localStorage.getItem(TIMER_KEY) || '0');
-    const savedSec  = parseInt(localStorage.getItem(SAVED_KEY) || '0');
-    const elapsed   = Math.floor((Date.now() - startTime) / 1000);
-    const totalMin  = Math.floor(elapsed / 60);
-    const savedMin  = Math.floor(savedSec / 60);
+    const savedMin  = parseInt(localStorage.getItem(SAVED_KEY) || '0'); // 분 단위
+    const totalMin  = Math.floor((Date.now() - startTime) / 60000);
     const remain    = totalMin - savedMin;
     if (remain > 0) saveStudyTime(remain);
 
@@ -464,12 +462,12 @@ function startIntervals() {
     _saveInterval = setInterval(() => {
         if (!isRunning()) { clearInterval(_saveInterval); return; }
         const startTime = parseInt(localStorage.getItem(TIMER_KEY) || '0');
-        const savedSec  = parseInt(localStorage.getItem(SAVED_KEY) || '0');
+        const savedMin  = parseInt(localStorage.getItem(SAVED_KEY) || '0'); // 분 단위로 통일
         if (!startTime) return;
-        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
-        const newMin = Math.floor(elapsedSec / 60) - Math.floor(savedSec / 60);
+        const elapsedMin = Math.floor((Date.now() - startTime) / 60000);
+        const newMin = elapsedMin - savedMin;
         if (newMin > 0) {
-            localStorage.setItem(SAVED_KEY, String(elapsedSec));
+            localStorage.setItem(SAVED_KEY, String(elapsedMin)); // 분 단위 저장
             saveStudyTime(newMin);
         }
     }, 60000);
@@ -526,10 +524,8 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('beforeunload', () => {
     if (!isRunning()) return;
     const startTime = parseInt(localStorage.getItem(TIMER_KEY) || '0');
-    const savedSec  = parseInt(localStorage.getItem(SAVED_KEY) || '0');
-    const elapsed   = Math.floor((Date.now() - startTime) / 1000);
-    const totalMin  = Math.floor(elapsed / 60);
-    const savedMin  = Math.floor(savedSec / 60);
+    const savedMin  = parseInt(localStorage.getItem(SAVED_KEY) || '0'); // 분 단위
+    const totalMin  = Math.floor((Date.now() - startTime) / 60000);
     const remain    = totalMin - savedMin;
     if (remain > 0) {
         navigator.sendBeacon('/api/study-log/save',
