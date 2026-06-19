@@ -13,9 +13,9 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 
-# 🌟 [이 부분을 수정] target 폴더 안의 모든 jar 파일을 실행 가능한 이름으로 가져옵니다.
+# target 폴더 안의 모든 jar 파일을 실행 가능한 이름으로 가져옵니다.
 COPY --from=build /app/target/*.jar app.jar
 
-# 5. 실행합니다.
+# 🌟 [여기서부터 수정] 포트 통로를 8081로 전격 교체합니다!
 EXPOSE 8080
 CMD ["java", "-jar", "app.jar"]
